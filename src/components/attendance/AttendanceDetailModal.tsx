@@ -281,37 +281,15 @@ export const AttendanceDetailModal: React.FC<AttendanceDetailModalProps> = ({
                         alt="Foto Masuk"
                         crossOrigin="anonymous"
                         className="w-full h-full object-cover"
-                        onError={(e) => {
-                          console.warn('⚠️ [AttendanceDetailModal] Foto Masuk tidak dapat dimuat dari remote disk:', {
-                            attemptedUrl: photoInUrl,
-                            rawDbValue: record.photoCheckIn,
-                            employeeId: record.employee?.employeeId,
-                            attendanceDate: record.attendanceDate,
-                          });
+                        onError={() => {
+                          console.warn('⚠️ [AttendanceDetailModal] Foto Masuk gagal dimuat:', photoInUrl);
                           setPhotoInError(true);
                         }}
                       />
                     ) : (
                       <div className="w-full h-full flex flex-col items-center justify-center p-3 text-center bg-slate-50 border border-dashed border-slate-200">
-                        <div className="h-8 w-8 rounded-full bg-emerald-50 border border-emerald-200 flex items-center justify-center mb-1.5 text-emerald-600">
-                          <CheckCircle2 className="h-4 w-4" />
-                        </div>
-                        <span className="text-[11px] font-semibold text-slate-700">Presensi Terverifikasi</span>
-                        <span className="text-[10px] text-slate-400 max-w-[210px] leading-tight mt-0.5">
-                          Arsip foto fisik lokal telah di-reset oleh siklus deploy container. Data jam & koordinat GPS valid.
-                        </span>
-                        {photoInUrl && !photoInUrl.startsWith('data:') && (
-                          <a
-                            href={photoInUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            onClick={(e) => e.stopPropagation()}
-                            className="mt-2 text-[10px] text-blue-600 hover:text-blue-700 underline font-medium flex items-center gap-1"
-                          >
-                            <ExternalLink className="h-3 w-3" />
-                            Cek endpoint file
-                          </a>
-                        )}
+                        <Camera className="h-6 w-6 text-slate-300 mb-1" />
+                        <span className="text-xs font-medium text-slate-600">Foto tidak dapat dimuat</span>
                       </div>
                     )}
                     {!photoInError && (
@@ -358,37 +336,15 @@ export const AttendanceDetailModal: React.FC<AttendanceDetailModalProps> = ({
                         alt="Foto Pulang"
                         crossOrigin="anonymous"
                         className="w-full h-full object-cover"
-                        onError={(e) => {
-                          console.warn('⚠️ [AttendanceDetailModal] Foto Pulang tidak dapat dimuat dari remote disk:', {
-                            attemptedUrl: photoOutUrl,
-                            rawDbValue: record.photoCheckOut,
-                            employeeId: record.employee?.employeeId,
-                            attendanceDate: record.attendanceDate,
-                          });
+                        onError={() => {
+                          console.warn('⚠️ [AttendanceDetailModal] Foto Pulang gagal dimuat:', photoOutUrl);
                           setPhotoOutError(true);
                         }}
                       />
                     ) : (
                       <div className="w-full h-full flex flex-col items-center justify-center p-3 text-center bg-slate-50 border border-dashed border-slate-200">
-                        <div className="h-8 w-8 rounded-full bg-emerald-50 border border-emerald-200 flex items-center justify-center mb-1.5 text-emerald-600">
-                          <CheckCircle2 className="h-4 w-4" />
-                        </div>
-                        <span className="text-[11px] font-semibold text-slate-700">Presensi Terverifikasi</span>
-                        <span className="text-[10px] text-slate-400 max-w-[210px] leading-tight mt-0.5">
-                          Arsip foto fisik lokal telah di-reset oleh siklus deploy container. Data jam & koordinat GPS valid.
-                        </span>
-                        {photoOutUrl && !photoOutUrl.startsWith('data:') && (
-                          <a
-                            href={photoOutUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            onClick={(e) => e.stopPropagation()}
-                            className="mt-2 text-[10px] text-blue-600 hover:text-blue-700 underline font-medium flex items-center gap-1"
-                          >
-                            <ExternalLink className="h-3 w-3" />
-                            Cek endpoint file
-                          </a>
-                        )}
+                        <Camera className="h-6 w-6 text-slate-300 mb-1" />
+                        <span className="text-xs font-medium text-slate-600">Foto tidak dapat dimuat</span>
                       </div>
                     )}
                     {!photoOutError && (
@@ -540,13 +496,8 @@ export const AttendanceDetailModal: React.FC<AttendanceDetailModalProps> = ({
                 style={{ display: 'none' }}
                 className="flex flex-col items-center justify-center p-6 text-center text-slate-300"
               >
-                <div className="h-12 w-12 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center mb-2.5 text-emerald-400">
-                  <CheckCircle2 className="h-6 w-6" />
-                </div>
-                <p className="text-sm font-semibold text-slate-200">Presensi Terverifikasi</p>
-                <p className="text-xs text-slate-400 mt-1 max-w-xs leading-relaxed">
-                  Arsip file foto fisik di server disk lokal telah di-reset oleh siklus container Railway. Jam dan koordinat GPS presensi tetap tersimpan valid.
-                </p>
+                <Camera className="h-8 w-8 text-slate-500 mb-2" />
+                <p className="text-sm font-semibold text-slate-300">Foto tidak dapat ditampilkan</p>
               </div>
             </div>
             <div className="flex justify-end">

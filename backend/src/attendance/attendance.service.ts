@@ -67,36 +67,44 @@ export class AttendanceService {
     dateString: string,
     type: 'check-in' | 'check-out'
   ): Promise<string> {
-    if (!photoData) {
+    if (!photoData || typeof photoData !== 'string') {
       throw new BadRequestException('Foto selfie absensi diperlukan');
     }
 
-    if (
-      photoData.startsWith('/uploads/') ||
-      photoData.startsWith('http://') ||
-      photoData.startsWith('https://')
-    ) {
-      return photoData;
+    const trimmed = photoData.trim();
+
+    // 1. If already an absolute HTTPS URL (from Cloudinary or Supabase Storage)
+    if (trimmed.startsWith('https://') || trimmed.startsWith('http://')) {
+      return trimmed;
     }
 
+    // 2. Normalize base64 data URI
+    let cleanDataUri = trimmed;
+    if (!cleanDataUri.startsWith('data:image/')) {
+      cleanDataUri = `data:image/jpeg;base64,${cleanDataUri.replace(/^data:image\/\w+;base64,/, '')}`;
+    }
+
+    // 3. Try Cloud Storage upload if credentials (Supabase / Cloudinary) are configured
     try {
       const safeEmployeeId = employeeId.replace(/[^a-zA-Z0-9_-]/g, '');
       const safeDateString = dateString.replace(/[^0-9-]/g, '');
       const folder = `attendance-photos/${safeEmployeeId}/${safeDateString}`;
 
-      const savedUrl = await this.storageService.uploadImage(photoData, {
+      const uploadedUrl = await this.storageService.uploadImage(cleanDataUri, {
         folder,
         type,
       });
 
-      return savedUrl;
-    } catch (err: any) {
-      console.error('Failed to save attendance photo via StorageService:', err);
-      if (photoData.startsWith('data:image/')) {
-        return photoData;
+      if (uploadedUrl && !uploadedUrl.startsWith('/uploads/')) {
+        return uploadedUrl;
       }
-      return `data:image/jpeg;base64,${photoData.replace(/^data:image\/\w+;base64,/, '')}`;
+    } catch (err: any) {
+      console.warn('StorageService cloud upload notice:', err?.message || err);
     }
+
+    // 4. Default: directly store the base64 data URI in PostgreSQL (@db.Text)
+    // Completely bypasses local filesystem disk ./uploads to ensure 100% persistence on Railway!
+    return cleanDataUri;
   }
 
   /**

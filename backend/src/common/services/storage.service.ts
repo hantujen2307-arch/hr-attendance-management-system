@@ -113,35 +113,10 @@ export class StorageService {
       return s3Url;
     }
 
-    // 6. Write to local disk cache (for development and local fallback)
-    this.saveToLocalDisk(buffer, safeFolder, filename);
-
-    // 7. Persistent Cloud Fallback for Ephemeral Environments (Railway / Vercel):
-    // In serverless/container environments where disk is ephemeral upon redeploy,
-    // storing the compressed base64 data URI directly in PostgreSQL (@db.Text) ensures
-    // the selfie photo NEVER gets deleted or 404s after container restart!
-    const isProduction = process.env.NODE_ENV === 'production';
-    const isRailway = Boolean(
-      process.env.RAILWAY_ENVIRONMENT ||
-      process.env.RAILWAY_STATIC_URL ||
-      process.env.RAILWAY_SERVICE_NAME ||
-      process.env.RAILWAY_PROJECT_ID ||
-      process.env.RAILWAY_GIT_COMMIT_SHA
-    );
-    const isVercel = Boolean(process.env.VERCEL || process.env.VERCEL_ENV);
-
-    // If cloud storage credentials are not provided:
-    // ALWAYS use persistent base64 data URI in production/cloud container environments,
-    // so it NEVER creates broken /uploads/ paths that get wiped on container rebuild!
-    if (isProduction || isRailway || isVercel || process.env.PERSIST_PHOTO_IN_DB === 'true') {
-      this.logger.warn(
-        `⚠️ Cloud Storage (Supabase/Cloudinary) not configured. Using persistent Database Data URI fallback for ${filename}`
-      );
-      return `data:${mimeType};base64,${cleanBase64}`;
-    }
-
-    // In local development, return local relative path
-    return `/uploads/${safeFolder}/${filename}`;
+    // 6. Zero-Disk-Dependency: Return persistent Base64 Data URI directly for storage in PostgreSQL @db.Text
+    // Completely eliminates local filesystem writes to ./uploads to ensure photos survive 100% of container restarts!
+    this.logger.log(`💾 Storing photo as persistent Base64 Data URI in database (${filename})`);
+    return `data:${mimeType};base64,${cleanBase64}`;
   }
 
   /**

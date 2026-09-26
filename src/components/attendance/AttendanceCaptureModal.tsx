@@ -271,19 +271,28 @@ export const AttendanceCaptureModal: React.FC<AttendanceCaptureModalProps> = ({
     try {
       const video = videoRef.current;
       const canvas = canvasRef.current;
-      canvas.width = video.videoWidth || 480;
-      canvas.height = video.videoHeight || 480;
+
+      // Optimize selfie resolution: max width 480px with proportional height
+      const targetWidth = 480;
+      const originalWidth = video.videoWidth || 640;
+      const originalHeight = video.videoHeight || 480;
+      const aspectRatio = originalHeight / originalWidth;
+      const targetHeight = Math.round(targetWidth * aspectRatio);
+
+      canvas.width = targetWidth;
+      canvas.height = targetHeight;
 
       const context = canvas.getContext('2d');
       if (context) {
         if (facingMode === 'user') {
           // Mirror the image horizontally for natural selfie appearance
-          context.translate(canvas.width, 0);
+          context.translate(targetWidth, 0);
           context.scale(-1, 1);
         }
-        context.drawImage(video, 0, 0, canvas.width, canvas.height);
+        context.drawImage(video, 0, 0, targetWidth, targetHeight);
 
-        const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+        // Compress to Base64 JPEG with optimal 0.6 quality (~30KB - 50KB payload)
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.6);
         setCapturedPhoto(dataUrl);
         setStep('photo-preview');
         stopCamera();
@@ -318,6 +327,9 @@ export const AttendanceCaptureModal: React.FC<AttendanceCaptureModalProps> = ({
         longitude: location.longitude,
         accuracy: location.accuracy,
         photo: capturedPhoto,
+        photoUrl: capturedPhoto,
+        checkInPhoto: mode === 'check-in' ? capturedPhoto : undefined,
+        checkOutPhoto: mode === 'check-out' ? capturedPhoto : undefined,
       };
 
       const res = await fetch(endpoint, {

@@ -25,6 +25,9 @@ export interface AttendanceRecordItem {
   notes?: string | null;
   photoCheckIn?: string | null;
   photoCheckOut?: string | null;
+  checkInPhoto?: string | null;
+  checkOutPhoto?: string | null;
+  photoUrl?: string | null;
   distanceCheckIn?: number | null;
   distanceCheckOut?: number | null;
   latitudeCheckIn?: number | null;
@@ -245,7 +248,7 @@ export const AttendanceTable: React.FC<AttendanceTableProps> = ({
 
                   {/* Foto Thumbnail */}
                   <TableCell className="text-center">
-                    {record.photoCheckIn ? (
+                    {record.photoCheckIn || record.checkInPhoto || record.photoUrl ? (
                       <div
                         className="inline-block relative h-8 w-8 rounded-md overflow-hidden border border-slate-200 bg-slate-100 cursor-pointer shadow-2xs hover:ring-2 hover:ring-blue-500 transition-all"
                         onClick={() => onViewDetail(record)}
@@ -255,7 +258,7 @@ export const AttendanceTable: React.FC<AttendanceTableProps> = ({
                           <Camera className="h-4 w-4" />
                         </div>
                         <img
-                          src={getPhotoUrl(record.photoCheckIn)}
+                          src={getPhotoUrl(record.checkInPhoto || record.photoUrl || record.photoCheckIn)}
                           alt="Selfie Masuk"
                           crossOrigin="anonymous"
                           className="relative h-full w-full object-cover z-1"
@@ -354,13 +357,13 @@ export const AttendanceTable: React.FC<AttendanceTableProps> = ({
               </div>
 
               <div className="flex items-center justify-between pt-1">
-                {record.photoCheckIn ? (
+                {record.photoCheckIn || record.checkInPhoto || record.photoUrl ? (
                   <div
                     className="flex items-center gap-1.5 text-xs text-blue-600 cursor-pointer"
                     onClick={() => onViewDetail(record)}
                   >
                     <img
-                      src={getPhotoUrl(record.photoCheckIn)}
+                      src={getPhotoUrl(record.checkInPhoto || record.photoUrl || record.photoCheckIn)}
                       alt="Selfie"
                       className="h-6 w-6 rounded-md object-cover border border-slate-200"
                       onError={(e) => {

@@ -31,6 +31,9 @@ export interface AttendanceDetailData {
   notes?: string | null;
   photoCheckIn?: string | null;
   photoCheckOut?: string | null;
+  checkInPhoto?: string | null;
+  checkOutPhoto?: string | null;
+  photoUrl?: string | null;
   latitudeCheckIn?: number | null;
   longitudeCheckIn?: number | null;
   accuracyCheckIn?: number | null;
@@ -75,7 +78,14 @@ export const AttendanceDetailModal: React.FC<AttendanceDetailModalProps> = ({
   useEffect(() => {
     setPhotoInError(false);
     setPhotoOutError(false);
-  }, [record?.id, record?.photoCheckIn, record?.photoCheckOut]);
+  }, [
+    record?.id,
+    record?.photoCheckIn,
+    record?.checkInPhoto,
+    record?.photoUrl,
+    record?.photoCheckOut,
+    record?.checkOutPhoto,
+  ]);
 
   if (!record) return null;
 
@@ -127,8 +137,11 @@ export const AttendanceDetailModal: React.FC<AttendanceDetailModalProps> = ({
     ? `${record.employee.firstName} ${record.employee.lastName}`
     : 'Unknown Employee';
 
-  const photoInUrl = getPhotoUrl(record.photoCheckIn);
-  const photoOutUrl = getPhotoUrl(record.photoCheckOut);
+  const checkInPhoto = record.checkInPhoto || record.photoUrl || record.photoCheckIn;
+  const checkOutPhoto = record.checkOutPhoto || record.photoCheckOut;
+
+  const photoInUrl = getPhotoUrl(checkInPhoto);
+  const photoOutUrl = getPhotoUrl(checkOutPhoto);
 
   const officeLat = record.setting?.latitude ?? -6.2088;
   const officeLng = record.setting?.longitude ?? 106.8456;
@@ -263,13 +276,13 @@ export const AttendanceDetailModal: React.FC<AttendanceDetailModalProps> = ({
                     </span>
                   )}
                 </div>
-                {record.photoCheckIn ? (
+                {checkInPhoto ? (
                   <div
                     className={`relative aspect-video w-full rounded-lg overflow-hidden bg-slate-100 border border-slate-200 ${!photoInError ? 'cursor-pointer group' : ''}`}
                     onClick={() => {
                       if (!photoInError) {
                         setSelectedPhoto({
-                          url: photoInUrl,
+                          url: photoInUrl || (checkInPhoto as string),
                           title: `Foto Absen Masuk - ${employeeName}`,
                         });
                       }
@@ -277,8 +290,8 @@ export const AttendanceDetailModal: React.FC<AttendanceDetailModalProps> = ({
                   >
                     {!photoInError ? (
                       <img
-                        src={photoInUrl}
-                        alt="Foto Masuk"
+                        src={photoInUrl || (record.checkInPhoto || record.photoUrl || '')}
+                        alt="Foto Selfie"
                         crossOrigin="anonymous"
                         className="w-full h-full object-cover"
                         onError={() => {
@@ -318,13 +331,13 @@ export const AttendanceDetailModal: React.FC<AttendanceDetailModalProps> = ({
                     </span>
                   )}
                 </div>
-                {record.photoCheckOut ? (
+                {checkOutPhoto ? (
                   <div
                     className={`relative aspect-video w-full rounded-lg overflow-hidden bg-slate-100 border border-slate-200 ${!photoOutError ? 'cursor-pointer group' : ''}`}
                     onClick={() => {
                       if (!photoOutError) {
                         setSelectedPhoto({
-                          url: photoOutUrl,
+                          url: photoOutUrl || (checkOutPhoto as string),
                           title: `Foto Absen Pulang - ${employeeName}`,
                         });
                       }
@@ -332,8 +345,8 @@ export const AttendanceDetailModal: React.FC<AttendanceDetailModalProps> = ({
                   >
                     {!photoOutError ? (
                       <img
-                        src={photoOutUrl}
-                        alt="Foto Pulang"
+                        src={photoOutUrl || (record.checkOutPhoto || '')}
+                        alt="Foto Selfie Pulang"
                         crossOrigin="anonymous"
                         className="w-full h-full object-cover"
                         onError={() => {

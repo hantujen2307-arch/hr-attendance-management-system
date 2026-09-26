@@ -37,6 +37,9 @@ export interface AttendanceRecordData {
   attendanceDate: string;
   photoCheckIn?: string | null;
   photoCheckOut?: string | null;
+  checkInPhoto?: string | null;
+  checkOutPhoto?: string | null;
+  photoUrl?: string | null;
   distanceCheckIn?: number | null;
   distanceCheckOut?: number | null;
   latitudeCheckIn?: number | null;
@@ -435,14 +438,14 @@ export const EmployeeCheckInCard: React.FC<EmployeeCheckInCardProps> = ({
                   </div>
 
                   {/* Foto Selfie Masuk */}
-                  {attendanceRecord?.photoCheckIn && (
+                  {(attendanceRecord?.photoCheckIn || attendanceRecord?.checkInPhoto || attendanceRecord?.photoUrl) && (
                     <div className="flex items-center gap-2">
                       <span className="text-slate-400 font-medium">Foto Masuk:</span>
                       <button
                         type="button"
                         onClick={() =>
                           setPreviewPhoto({
-                            url: getPhotoUrl(attendanceRecord.photoCheckIn),
+                            url: getPhotoUrl(attendanceRecord.checkInPhoto || attendanceRecord.photoUrl || attendanceRecord.photoCheckIn),
                             title: 'Foto Selfie Masuk',
                           })
                         }
@@ -453,7 +456,7 @@ export const EmployeeCheckInCard: React.FC<EmployeeCheckInCardProps> = ({
                           <Camera className="h-3.5 w-3.5" />
                         </div>
                         <img
-                          src={getPhotoUrl(attendanceRecord.photoCheckIn)}
+                          src={getPhotoUrl(attendanceRecord.checkInPhoto || attendanceRecord.photoUrl || attendanceRecord.photoCheckIn)}
                           alt="Foto Masuk"
                           crossOrigin="anonymous"
                           className="relative h-full w-full object-cover z-1"
@@ -479,14 +482,14 @@ export const EmployeeCheckInCard: React.FC<EmployeeCheckInCardProps> = ({
                       </div>
 
                       {/* Foto Selfie Pulang */}
-                      {attendanceRecord?.photoCheckOut && (
+                      {(attendanceRecord?.photoCheckOut || attendanceRecord?.checkOutPhoto) && (
                         <div className="flex items-center gap-2">
                           <span className="text-slate-400 font-medium">Foto Pulang:</span>
                           <button
                             type="button"
                             onClick={() =>
                               setPreviewPhoto({
-                                url: getPhotoUrl(attendanceRecord.photoCheckOut),
+                                url: getPhotoUrl(attendanceRecord.checkOutPhoto || attendanceRecord.photoCheckOut),
                                 title: 'Foto Selfie Pulang',
                               })
                             }
@@ -497,7 +500,7 @@ export const EmployeeCheckInCard: React.FC<EmployeeCheckInCardProps> = ({
                               <Camera className="h-3.5 w-3.5" />
                             </div>
                             <img
-                              src={getPhotoUrl(attendanceRecord.photoCheckOut)}
+                              src={getPhotoUrl(attendanceRecord.checkOutPhoto || attendanceRecord.photoCheckOut)}
                               alt="Foto Pulang"
                               crossOrigin="anonymous"
                               className="relative h-full w-full object-cover z-1"

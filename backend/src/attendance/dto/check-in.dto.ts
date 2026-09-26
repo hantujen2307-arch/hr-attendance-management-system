@@ -21,9 +21,27 @@ export class CheckInDto {
   @IsNumber()
   accuracy?: number;
 
-  @ApiProperty({ description: 'Base64 data URL or path of selfie photo' })
-  @IsNotEmpty({ message: 'Foto selfie absensi diperlukan' })
+  @ApiPropertyOptional({ description: 'Base64 data URL or path of selfie photo' })
+  @IsOptional()
   @IsString()
   @MaxLength(10_000_000, { message: 'Ukuran foto maksimal 10MB' })
-  photo: string;
+  photo?: string;
+
+  @ApiPropertyOptional({ description: 'URL or Base64 data of selfie photo' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(10_000_000, { message: 'Ukuran foto maksimal 10MB' })
+  photoUrl?: string;
+
+  @ApiPropertyOptional({ description: 'Check-in selfie photo Base64 / URL' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(10_000_000, { message: 'Ukuran foto maksimal 10MB' })
+  checkInPhoto?: string;
+
+  @ApiPropertyOptional({ description: 'Check-in selfie photo Base64 / URL alias' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(10_000_000, { message: 'Ukuran foto maksimal 10MB' })
+  photoCheckIn?: string;
 }

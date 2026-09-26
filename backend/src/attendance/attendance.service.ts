@@ -354,9 +354,14 @@ export class AttendanceService {
       );
     }
 
-    // Save selfie photo
+    // Save selfie photo (supports checkInPhoto, photoUrl, photo, photoCheckIn)
+    const rawPhoto = dto.checkInPhoto || dto.photoUrl || dto.photo || dto.photoCheckIn;
+    if (!rawPhoto) {
+      throw new BadRequestException('Foto selfie absensi diperlukan');
+    }
+
     const photoPath = await this.savePhoto(
-      dto.photo,
+      rawPhoto,
       employee.employeeId,
       dateString,
       'check-in'
@@ -468,7 +473,12 @@ export class AttendanceService {
       }
     }
 
-    return record;
+    return {
+      ...record,
+      checkInPhoto: photoPath,
+      photoUrl: photoPath,
+      photoCheckIn: photoPath,
+    };
   }
 
   /**
@@ -572,9 +582,14 @@ export class AttendanceService {
       );
     }
 
-    // Save selfie photo
+    // Save selfie photo (supports checkOutPhoto, photoUrl, photo, photoCheckOut)
+    const rawPhoto = dto.checkOutPhoto || dto.photoUrl || dto.photo || dto.photoCheckOut;
+    if (!rawPhoto) {
+      throw new BadRequestException('Foto selfie absensi pulang diperlukan');
+    }
+
     const photoPath = await this.savePhoto(
-      dto.photo,
+      rawPhoto,
       employee.employeeId,
       targetDateString,
       'check-out'
@@ -660,7 +675,13 @@ export class AttendanceService {
       // Non-blocking overtime synchronization
     }
 
-    return updated;
+    return {
+      ...updated,
+      checkOutPhoto: photoPath,
+      photoUrl: updated.photoCheckIn || photoPath,
+      checkInPhoto: updated.photoCheckIn,
+      photoCheckOut: photoPath,
+    };
   }
 
   /**
@@ -730,6 +751,15 @@ export class AttendanceService {
           },
         },
       });
+    }
+
+    if (myAttendance) {
+      myAttendance = {
+        ...myAttendance,
+        photoUrl: myAttendance.photoCheckIn,
+        checkInPhoto: myAttendance.photoCheckIn,
+        checkOutPhoto: myAttendance.photoCheckOut,
+      };
     }
 
     return {
@@ -857,8 +887,15 @@ export class AttendanceService {
       this.getSetting(),
     ]);
 
+    const formattedData = data.map((att) => ({
+      ...att,
+      photoUrl: att.photoCheckIn,
+      checkInPhoto: att.photoCheckIn,
+      checkOutPhoto: att.photoCheckOut,
+    }));
+
     return {
-      data,
+      data: formattedData,
       setting: {
         locationName: setting.locationName,
         latitude: setting.latitude,
@@ -906,6 +943,9 @@ export class AttendanceService {
 
     return {
       ...attendance,
+      photoUrl: attendance.photoCheckIn,
+      checkInPhoto: attendance.photoCheckIn,
+      checkOutPhoto: attendance.photoCheckOut,
       setting: {
         locationName: setting.locationName,
         latitude: setting.latitude,

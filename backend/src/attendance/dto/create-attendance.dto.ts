@@ -1,4 +1,4 @@
-import { IsDateString, IsEnum, IsInt, IsNotEmpty, IsOptional, IsString, IsUUID, Min } from 'class-validator';
+import { IsDateString, IsEnum, IsInt, IsNotEmpty, IsOptional, IsString, IsUUID, MaxLength, Min } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { AttendanceStatus } from '@prisma/client';
 
@@ -38,4 +38,40 @@ export class CreateAttendanceDto {
   @IsString()
   @IsOptional()
   notes?: string;
+
+  @ApiPropertyOptional({ description: 'Check-in selfie photo Base64 / URL' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(10_000_000, { message: 'Ukuran foto maksimal 10MB' })
+  photo?: string;
+
+  @ApiPropertyOptional({ description: 'Check-in selfie photo Base64 / URL' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(10_000_000, { message: 'Ukuran foto maksimal 10MB' })
+  photoUrl?: string;
+
+  @ApiPropertyOptional({ description: 'Check-in selfie photo Base64 / URL' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(10_000_000, { message: 'Ukuran foto maksimal 10MB' })
+  checkInPhoto?: string;
+
+  @ApiPropertyOptional({ description: 'Check-in selfie photo Base64 / URL' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(10_000_000, { message: 'Ukuran foto maksimal 10MB' })
+  photoCheckIn?: string;
+
+  @ApiPropertyOptional({ description: 'Check-out selfie photo Base64 / URL' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(10_000_000, { message: 'Ukuran foto maksimal 10MB' })
+  checkOutPhoto?: string;
+
+  @ApiPropertyOptional({ description: 'Check-out selfie photo Base64 / URL' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(10_000_000, { message: 'Ukuran foto maksimal 10MB' })
+  photoCheckOut?: string;
 }

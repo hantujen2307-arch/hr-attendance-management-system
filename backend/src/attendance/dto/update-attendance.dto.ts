@@ -28,4 +28,34 @@ export class UpdateAttendanceDto {
   @IsString()
   @IsOptional()
   notes?: string;
+
+  @ApiPropertyOptional({ description: 'Check-in selfie photo Base64 / URL' })
+  @IsOptional()
+  @IsString()
+  photo?: string;
+
+  @ApiPropertyOptional({ description: 'Check-in selfie photo Base64 / URL' })
+  @IsOptional()
+  @IsString()
+  photoUrl?: string;
+
+  @ApiPropertyOptional({ description: 'Check-in selfie photo Base64 / URL' })
+  @IsOptional()
+  @IsString()
+  checkInPhoto?: string;
+
+  @ApiPropertyOptional({ description: 'Check-in selfie photo Base64 / URL' })
+  @IsOptional()
+  @IsString()
+  photoCheckIn?: string;
+
+  @ApiPropertyOptional({ description: 'Check-out selfie photo Base64 / URL' })
+  @IsOptional()
+  @IsString()
+  checkOutPhoto?: string;
+
+  @ApiPropertyOptional({ description: 'Check-out selfie photo Base64 / URL' })
+  @IsOptional()
+  @IsString()
+  photoCheckOut?: string;
 }

@@ -80,7 +80,11 @@ export class AttendanceService {
     try {
       const baseDirs = [
         path.resolve(process.cwd(), 'public/uploads/attendance-photos'),
+        path.resolve(process.cwd(), 'uploads/attendance-photos'),
         path.resolve(process.cwd(), '../public/uploads/attendance-photos'),
+        path.resolve(process.cwd(), '../uploads/attendance-photos'),
+        path.resolve(__dirname, '../../public/uploads/attendance-photos'),
+        path.resolve(__dirname, '../../uploads/attendance-photos'),
       ];
 
       // Sanitize path components to prevent path traversal

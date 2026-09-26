@@ -153,3 +153,51 @@ export function getEmploymentStatusStyle(status: EmploymentStatus): {
       };
   }
 }
+
+/**
+ * Resolves full photo/image URL for attendance selfies, employee avatars, receipts, etc.
+ * Supports:
+ * - Empty/null values -> returns ''
+ * - Data URLs (data:image/...) -> returns as-is
+ * - Blob URLs (blob:...) -> returns as-is
+ * - Absolute URLs (http://, https://) -> returns as-is
+ * - Raw base64 string without data prefix (starts with /9j/, iVBORw, etc.) -> prefixes with data:image/...;base64,
+ * - Relative paths (/uploads/...) -> prepends full Railway backend URL
+ */
+export function getPhotoUrl(photoUrl?: string | null): string {
+  if (!photoUrl || typeof photoUrl !== 'string') return '';
+  const trimmed = photoUrl.trim();
+  if (!trimmed) return '';
+
+  // 1. Data URLs & Blob URLs
+  if (trimmed.startsWith('data:image/') || trimmed.startsWith('blob:')) {
+    return trimmed;
+  }
+
+  // 2. Absolute URLs (already hosted on Cloudinary, S3, or Railway)
+  if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+    return trimmed;
+  }
+
+  // 3. Raw base64 data without data:image prefix
+  if (trimmed.startsWith('/9j/')) {
+    return `data:image/jpeg;base64,${trimmed}`;
+  }
+  if (trimmed.startsWith('iVBORw0KGgo')) {
+    return `data:image/png;base64,${trimmed}`;
+  }
+  if (trimmed.startsWith('UklGR')) {
+    return `data:image/webp;base64,${trimmed}`;
+  }
+
+  // 4. Relative paths (e.g. /uploads/attendance-photos/...) -> Prepend Railway Backend URL
+  const backendBase = (
+    process.env.NEXT_PUBLIC_BACKEND_URL ||
+    process.env.NEXT_PUBLIC_API_URL?.replace(/\/api\/?$/, '') ||
+    'https://hr-attendance-management-system-production.up.railway.app'
+  ).replace(/\/+$/, '');
+
+  const cleanPath = trimmed.startsWith('/') ? trimmed : `/${trimmed}`;
+  return `${backendBase}${cleanPath}`;
+}
+

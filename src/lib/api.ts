@@ -6,6 +6,13 @@ export const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL ||
   'https://hr-attendance-management-system-production.up.railway.app/api';
 
+export const BACKEND_BASE_URL =
+  process.env.NEXT_PUBLIC_BACKEND_URL ||
+  process.env.NEXT_PUBLIC_API_URL?.replace(/\/api\/?$/, '') ||
+  'https://hr-attendance-management-system-production.up.railway.app';
+
+export { getPhotoUrl } from './utils';
+
 /**
  * Retrieves the stored auth token from localStorage or document cookies.
  */

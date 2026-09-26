@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 import { EmployeeRecord } from '@/types';
+import { getPhotoUrl } from '@/lib/utils';
 import {
   Upload,
   User,
@@ -193,7 +194,7 @@ export const EditEmployeeModal: React.FC<EditEmployeeModalProps> = ({
           <div className="relative w-16 h-16 rounded-full overflow-hidden bg-slate-200 border-2 border-white shadow-xs shrink-0 flex items-center justify-center">
             {photoPreview ? (
               <img
-                src={photoPreview}
+                src={getPhotoUrl(photoPreview)}
                 alt="Preview"
                 className="w-full h-full object-cover"
               />

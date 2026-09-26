@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { cn } from '@/lib/utils';
+import { cn, getPhotoUrl } from '@/lib/utils';
 import Image from 'next/image';
 
 export interface AvatarProps extends React.HTMLAttributes<HTMLDivElement> {
@@ -18,6 +18,7 @@ export const Avatar: React.FC<AvatarProps> = ({
   ...props
 }) => {
   const [imageError, setImageError] = useState(false);
+  const resolvedSrc = src ? getPhotoUrl(src) : undefined;
 
   const getInitials = (text: string) => {
     const parts = text.trim().split(' ');
@@ -57,9 +58,9 @@ export const Avatar: React.FC<AvatarProps> = ({
       )}
       {...props}
     >
-      {src && !imageError ? (
+      {resolvedSrc && !imageError ? (
         <Image
-          src={src}
+          src={resolvedSrc}
           alt={name}
           fill
           sizes="64px"

@@ -23,6 +23,7 @@ import {
   getCurrentBrowserLocation,
   GeoLocationResult,
 } from '@/lib/geo';
+import { getPhotoUrl } from '@/lib/utils';
 
 export interface AttendanceRecordData {
   id: string;
@@ -347,7 +348,7 @@ export const EmployeeCheckInCard: React.FC<EmployeeCheckInCardProps> = ({
                         type="button"
                         onClick={() =>
                           setPreviewPhoto({
-                            url: attendanceRecord.photoCheckIn!,
+                            url: getPhotoUrl(attendanceRecord.photoCheckIn),
                             title: 'Foto Selfie Masuk',
                           })
                         }
@@ -355,9 +356,12 @@ export const EmployeeCheckInCard: React.FC<EmployeeCheckInCardProps> = ({
                         title="Klik untuk melihat foto"
                       >
                         <img
-                          src={attendanceRecord.photoCheckIn}
+                          src={getPhotoUrl(attendanceRecord.photoCheckIn)}
                           alt="Foto Masuk"
                           className="h-full w-full object-cover"
+                          onError={(e) => {
+                            (e.target as HTMLElement).style.display = 'none';
+                          }}
                         />
                         <span className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white transition-opacity">
                           <Eye className="h-3 w-3" />
@@ -384,7 +388,7 @@ export const EmployeeCheckInCard: React.FC<EmployeeCheckInCardProps> = ({
                             type="button"
                             onClick={() =>
                               setPreviewPhoto({
-                                url: attendanceRecord.photoCheckOut!,
+                                url: getPhotoUrl(attendanceRecord.photoCheckOut),
                                 title: 'Foto Selfie Pulang',
                               })
                             }
@@ -392,9 +396,12 @@ export const EmployeeCheckInCard: React.FC<EmployeeCheckInCardProps> = ({
                             title="Klik untuk melihat foto"
                           >
                             <img
-                              src={attendanceRecord.photoCheckOut}
+                              src={getPhotoUrl(attendanceRecord.photoCheckOut)}
                               alt="Foto Pulang"
                               className="h-full w-full object-cover"
+                              onError={(e) => {
+                                (e.target as HTMLElement).style.display = 'none';
+                              }}
                             />
                             <span className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white transition-opacity">
                               <Eye className="h-3 w-3" />
@@ -480,7 +487,7 @@ export const EmployeeCheckInCard: React.FC<EmployeeCheckInCardProps> = ({
           <div className="space-y-3">
             <div className="aspect-square w-full rounded-xl overflow-hidden bg-slate-100 border border-slate-200">
               <img
-                src={previewPhoto.url}
+                src={getPhotoUrl(previewPhoto.url)}
                 alt="Foto Selfie"
                 className="w-full h-full object-cover"
               />

@@ -12,7 +12,7 @@ import {
 import { Avatar } from '@/components/ui/Avatar';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
-import { formatDate } from '@/lib/utils';
+import { formatDate, getPhotoUrl } from '@/lib/utils';
 import { Clock, Eye, Edit3, CalendarCheck, MapPin, Camera } from 'lucide-react';
 
 export interface AttendanceRecordItem {
@@ -252,9 +252,12 @@ export const AttendanceTable: React.FC<AttendanceTableProps> = ({
                         title="Lihat foto absensi"
                       >
                         <img
-                          src={record.photoCheckIn}
+                          src={getPhotoUrl(record.photoCheckIn)}
                           alt="Selfie Masuk"
                           className="h-full w-full object-cover"
+                          onError={(e) => {
+                            (e.target as HTMLElement).style.display = 'none';
+                          }}
                         />
                       </div>
                     ) : (
@@ -353,9 +356,12 @@ export const AttendanceTable: React.FC<AttendanceTableProps> = ({
                     onClick={() => onViewDetail(record)}
                   >
                     <img
-                      src={record.photoCheckIn}
+                      src={getPhotoUrl(record.photoCheckIn)}
                       alt="Selfie"
                       className="h-6 w-6 rounded-md object-cover border border-slate-200"
+                      onError={(e) => {
+                        (e.target as HTMLElement).style.display = 'none';
+                      }}
                     />
                     <span className="text-[11px] font-medium">Lihat Foto</span>
                   </div>

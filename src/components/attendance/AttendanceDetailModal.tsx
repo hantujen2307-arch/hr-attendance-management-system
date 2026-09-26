@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Modal } from '@/components/ui/Modal';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
@@ -17,7 +17,7 @@ import {
   Building2,
   Briefcase,
 } from 'lucide-react';
-import { formatDate } from '@/lib/utils';
+import { formatDate, getPhotoUrl } from '@/lib/utils';
 import { AttendanceMap } from './AttendanceMap';
 
 export interface AttendanceDetailData {
@@ -68,6 +68,13 @@ export const AttendanceDetailModal: React.FC<AttendanceDetailModalProps> = ({
   record,
 }) => {
   const [selectedPhoto, setSelectedPhoto] = useState<{ url: string; title: string } | null>(null);
+  const [photoInError, setPhotoInError] = useState(false);
+  const [photoOutError, setPhotoOutError] = useState(false);
+
+  useEffect(() => {
+    setPhotoInError(false);
+    setPhotoOutError(false);
+  }, [record?.id, record?.photoCheckIn, record?.photoCheckOut]);
 
   if (!record) return null;
 
@@ -257,20 +264,33 @@ export const AttendanceDetailModal: React.FC<AttendanceDetailModalProps> = ({
                     className="relative aspect-video w-full rounded-lg overflow-hidden bg-slate-100 border border-slate-200 cursor-pointer group"
                     onClick={() =>
                       setSelectedPhoto({
-                        url: record.photoCheckIn!,
+                        url: getPhotoUrl(record.photoCheckIn),
                         title: `Foto Absen Masuk - ${employeeName}`,
                       })
                     }
                   >
-                    <img
-                      src={record.photoCheckIn}
-                      alt="Foto Masuk"
-                      className="w-full h-full object-cover"
-                    />
-                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white transition-opacity text-xs font-semibold gap-1.5">
-                      <Eye className="h-4 w-4" />
-                      Lihat Foto Penuh
-                    </div>
+                    {!photoInError ? (
+                      <img
+                        src={getPhotoUrl(record.photoCheckIn)}
+                        alt="Foto Masuk"
+                        className="w-full h-full object-cover"
+                        onError={() => setPhotoInError(true)}
+                      />
+                    ) : (
+                      <div className="w-full h-full flex flex-col items-center justify-center p-3 text-center bg-slate-50">
+                        <Camera className="h-6 w-6 text-slate-300 mb-1" />
+                        <span className="text-[11px] font-medium text-slate-600">Foto tidak dapat dimuat</span>
+                        <span className="text-[10px] text-slate-400 font-mono mt-0.5 truncate max-w-full px-2">
+                          {record.photoCheckIn.split('/').pop()}
+                        </span>
+                      </div>
+                    )}
+                    {!photoInError && (
+                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white transition-opacity text-xs font-semibold gap-1.5">
+                        <Eye className="h-4 w-4" />
+                        Lihat Foto Penuh
+                      </div>
+                    )}
                   </div>
                 ) : (
                   <div className="aspect-video w-full rounded-lg bg-slate-100 border border-dashed border-slate-300 flex items-center justify-center text-slate-400 text-xs">
@@ -294,20 +314,33 @@ export const AttendanceDetailModal: React.FC<AttendanceDetailModalProps> = ({
                     className="relative aspect-video w-full rounded-lg overflow-hidden bg-slate-100 border border-slate-200 cursor-pointer group"
                     onClick={() =>
                       setSelectedPhoto({
-                        url: record.photoCheckOut!,
+                        url: getPhotoUrl(record.photoCheckOut),
                         title: `Foto Absen Pulang - ${employeeName}`,
                       })
                     }
                   >
-                    <img
-                      src={record.photoCheckOut}
-                      alt="Foto Pulang"
-                      className="w-full h-full object-cover"
-                    />
-                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white transition-opacity text-xs font-semibold gap-1.5">
-                      <Eye className="h-4 w-4" />
-                      Lihat Foto Penuh
-                    </div>
+                    {!photoOutError ? (
+                      <img
+                        src={getPhotoUrl(record.photoCheckOut)}
+                        alt="Foto Pulang"
+                        className="w-full h-full object-cover"
+                        onError={() => setPhotoOutError(true)}
+                      />
+                    ) : (
+                      <div className="w-full h-full flex flex-col items-center justify-center p-3 text-center bg-slate-50">
+                        <Camera className="h-6 w-6 text-slate-300 mb-1" />
+                        <span className="text-[11px] font-medium text-slate-600">Foto tidak dapat dimuat</span>
+                        <span className="text-[10px] text-slate-400 font-mono mt-0.5 truncate max-w-full px-2">
+                          {record.photoCheckOut.split('/').pop()}
+                        </span>
+                      </div>
+                    )}
+                    {!photoOutError && (
+                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white transition-opacity text-xs font-semibold gap-1.5">
+                        <Eye className="h-4 w-4" />
+                        Lihat Foto Penuh
+                      </div>
+                    )}
                   </div>
                 ) : (
                   <div className="aspect-video w-full rounded-lg bg-slate-100 border border-dashed border-slate-300 flex items-center justify-center text-slate-400 text-xs">
@@ -434,7 +467,7 @@ export const AttendanceDetailModal: React.FC<AttendanceDetailModalProps> = ({
           <div className="space-y-3">
             <div className="aspect-square w-full rounded-xl overflow-hidden bg-black flex items-center justify-center">
               <img
-                src={selectedPhoto.url}
+                src={getPhotoUrl(selectedPhoto.url)}
                 alt="Foto Selfie"
                 className="max-h-full max-w-full object-contain"
               />

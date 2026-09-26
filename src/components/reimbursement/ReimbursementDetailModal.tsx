@@ -5,6 +5,7 @@ import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { ReimbursementRequest, UserRole } from '@/types';
+import { getPhotoUrl } from '@/lib/utils';
 import {
   Calendar,
   DollarSign,
@@ -217,7 +218,7 @@ export const ReimbursementDetailModal: React.FC<ReimbursementDetailModalProps> =
                     onClick={() => setShowFullReceipt(!showFullReceipt)}
                   >
                     <img
-                      src={receiptData}
+                      src={getPhotoUrl(receiptData)}
                       alt={reimbursement.receiptFileName || 'Bukti kwitansi'}
                       className="max-h-72 object-contain w-auto hover:opacity-95 transition-opacity"
                     />

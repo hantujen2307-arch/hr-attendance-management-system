@@ -446,18 +446,22 @@ export const EmployeeCheckInCard: React.FC<EmployeeCheckInCardProps> = ({
                             title: 'Foto Selfie Masuk',
                           })
                         }
-                        className="relative group h-8 w-8 rounded-lg overflow-hidden border border-slate-300 shadow-2xs cursor-pointer hover:ring-2 hover:ring-blue-500 transition-all"
+                        className="relative group h-8 w-8 rounded-lg overflow-hidden border border-slate-300 bg-slate-100 shadow-2xs cursor-pointer hover:ring-2 hover:ring-blue-500 transition-all"
                         title="Klik untuk melihat foto"
                       >
+                        <div className="absolute inset-0 flex items-center justify-center text-slate-400">
+                          <Camera className="h-3.5 w-3.5" />
+                        </div>
                         <img
                           src={getPhotoUrl(attendanceRecord.photoCheckIn)}
                           alt="Foto Masuk"
-                          className="h-full w-full object-cover"
+                          crossOrigin="anonymous"
+                          className="relative h-full w-full object-cover z-1"
                           onError={(e) => {
                             (e.target as HTMLElement).style.display = 'none';
                           }}
                         />
-                        <span className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white transition-opacity">
+                        <span className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white transition-opacity z-2">
                           <Eye className="h-3 w-3" />
                         </span>
                       </button>
@@ -486,18 +490,22 @@ export const EmployeeCheckInCard: React.FC<EmployeeCheckInCardProps> = ({
                                 title: 'Foto Selfie Pulang',
                               })
                             }
-                            className="relative group h-8 w-8 rounded-lg overflow-hidden border border-slate-300 shadow-2xs cursor-pointer hover:ring-2 hover:ring-blue-500 transition-all"
+                            className="relative group h-8 w-8 rounded-lg overflow-hidden border border-slate-300 bg-slate-100 shadow-2xs cursor-pointer hover:ring-2 hover:ring-blue-500 transition-all"
                             title="Klik untuk melihat foto"
                           >
+                            <div className="absolute inset-0 flex items-center justify-center text-slate-400">
+                              <Camera className="h-3.5 w-3.5" />
+                            </div>
                             <img
                               src={getPhotoUrl(attendanceRecord.photoCheckOut)}
                               alt="Foto Pulang"
-                              className="h-full w-full object-cover"
+                              crossOrigin="anonymous"
+                              className="relative h-full w-full object-cover z-1"
                               onError={(e) => {
                                 (e.target as HTMLElement).style.display = 'none';
                               }}
                             />
-                            <span className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white transition-opacity">
+                            <span className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white transition-opacity z-2">
                               <Eye className="h-3 w-3" />
                             </span>
                           </button>

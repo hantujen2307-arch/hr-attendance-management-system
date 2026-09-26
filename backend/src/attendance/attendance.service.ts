@@ -25,6 +25,7 @@ import {
 import { calculateOvertimeMinutes } from '../overtime/overtime.time.util';
 
 import { NotificationsService } from '../notifications/notifications.service';
+import { StorageService } from '../common/services/storage.service';
 
 @Injectable()
 export class AttendanceService {
@@ -32,6 +33,7 @@ export class AttendanceService {
     private readonly prisma: PrismaService,
     private readonly auditService: AuditService,
     private readonly notificationsService: NotificationsService,
+    private readonly storageService: StorageService,
   ) {}
 
   /**
@@ -56,8 +58,8 @@ export class AttendanceService {
   }
 
   /**
-   * Helper to securely save base64 selfie image to storage.
-   * Path: public/uploads/attendance-photos/{employee_id}/{dateString}/{timestamp}-{random}-{type}.jpg
+   * Helper to securely upload or persist selfie image to Cloud Storage (Supabase/Cloudinary)
+   * or persistent Base64 Data URI in PostgreSQL (@db.Text) for serverless/ephemeral environments.
    */
   private async savePhoto(
     photoData: string,
@@ -78,81 +80,22 @@ export class AttendanceService {
     }
 
     try {
-      const baseDirs = [
-        path.resolve(process.cwd(), 'public/uploads/attendance-photos'),
-        path.resolve(process.cwd(), 'uploads/attendance-photos'),
-        path.resolve(process.cwd(), '../public/uploads/attendance-photos'),
-        path.resolve(process.cwd(), '../uploads/attendance-photos'),
-        path.resolve(__dirname, '../../public/uploads/attendance-photos'),
-        path.resolve(__dirname, '../../uploads/attendance-photos'),
-      ];
-
-      // Sanitize path components to prevent path traversal
       const safeEmployeeId = employeeId.replace(/[^a-zA-Z0-9_-]/g, '');
       const safeDateString = dateString.replace(/[^0-9-]/g, '');
-      const relativeFolder = path.join(safeEmployeeId, safeDateString);
+      const folder = `attendance-photos/${safeEmployeeId}/${safeDateString}`;
 
-      const base64Clean = photoData.replace(/^data:image\/\w+;base64,/, '');
-      const buffer = Buffer.from(base64Clean, 'base64');
+      const savedUrl = await this.storageService.uploadImage(photoData, {
+        folder,
+        type,
+      });
 
-      if (buffer.length === 0) {
-        throw new BadRequestException('Data foto selfie kosong atau tidak valid');
-      }
-
-      if (buffer.length > 5 * 1024 * 1024) {
-        throw new BadRequestException('Ukuran foto selfie melebihi batas maksimal 5MB');
-      }
-
-      // Magic bytes verification
-      let ext = 'jpg';
-      if (buffer.length >= 3 && buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff) {
-        ext = 'jpg';
-      } else if (
-        buffer.length >= 8 &&
-        buffer[0] === 0x89 &&
-        buffer[1] === 0x50 &&
-        buffer[2] === 0x4e &&
-        buffer[3] === 0x47
-      ) {
-        ext = 'png';
-      } else if (
-        buffer.length >= 12 &&
-        buffer.subarray(0, 4).toString('ascii') === 'RIFF' &&
-        buffer.subarray(8, 12).toString('ascii') === 'WEBP'
-      ) {
-        ext = 'webp';
-      } else {
-        throw new BadRequestException('Format file tidak valid. Hanya file JPEG, PNG, atau WebP yang diperbolehkan.');
-      }
-
-      const filename = `${Date.now()}-${Math.random().toString(36).substring(2, 8)}-${type}.${ext}`;
-
-      let writeSuccess = false;
-      for (const baseDir of baseDirs) {
-        try {
-          const targetFolder = path.join(baseDir, relativeFolder);
-          if (!fs.existsSync(targetFolder)) {
-            fs.mkdirSync(targetFolder, { recursive: true });
-          }
-          fs.writeFileSync(path.join(targetFolder, filename), buffer);
-          writeSuccess = true;
-        } catch {
-          // Ignore directory errors for alternative paths
-        }
-      }
-
-      if (writeSuccess) {
-        return `/uploads/attendance-photos/${relativeFolder}/${filename}`;
-      }
-
-      // Fallback if local filesystem write failed: store Base64 data URI directly
-      return photoData.startsWith('data:image/')
-        ? photoData
-        : `data:image/${ext === 'png' ? 'png' : ext === 'webp' ? 'webp' : 'jpeg'};base64,${base64Clean}`;
+      return savedUrl;
     } catch (err: any) {
-      if (err instanceof BadRequestException) throw err;
-      console.error('Failed to save attendance photo:', err);
-      throw new BadRequestException('Foto gagal diambil atau disimpan. Silakan coba lagi.');
+      console.error('Failed to save attendance photo via StorageService:', err);
+      if (photoData.startsWith('data:image/')) {
+        return photoData;
+      }
+      return `data:image/jpeg;base64,${photoData.replace(/^data:image\/\w+;base64,/, '')}`;
     }
   }
 

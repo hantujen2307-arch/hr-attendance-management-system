@@ -247,14 +247,18 @@ export const AttendanceTable: React.FC<AttendanceTableProps> = ({
                   <TableCell className="text-center">
                     {record.photoCheckIn ? (
                       <div
-                        className="inline-block relative h-8 w-8 rounded-md overflow-hidden border border-slate-200 cursor-pointer shadow-2xs hover:ring-2 hover:ring-blue-500 transition-all"
+                        className="inline-block relative h-8 w-8 rounded-md overflow-hidden border border-slate-200 bg-slate-100 cursor-pointer shadow-2xs hover:ring-2 hover:ring-blue-500 transition-all"
                         onClick={() => onViewDetail(record)}
                         title="Lihat foto absensi"
                       >
+                        <div className="absolute inset-0 flex items-center justify-center text-slate-400">
+                          <Camera className="h-4 w-4" />
+                        </div>
                         <img
                           src={getPhotoUrl(record.photoCheckIn)}
                           alt="Selfie Masuk"
-                          className="h-full w-full object-cover"
+                          crossOrigin="anonymous"
+                          className="relative h-full w-full object-cover z-1"
                           onError={(e) => {
                             (e.target as HTMLElement).style.display = 'none';
                           }}

@@ -18,7 +18,15 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: 'https',
+        hostname: '**.railway.app',
+      },
+      {
+        protocol: 'https',
         hostname: '*.supabase.co',
+      },
+      {
+        protocol: 'https',
+        hostname: '**.supabase.co',
       },
       {
         protocol: 'https',
@@ -26,7 +34,27 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: 'https',
+        hostname: '*.cloudinary.com',
+      },
+      {
+        protocol: 'https',
+        hostname: '**.cloudinary.com',
+      },
+      {
+        protocol: 'https',
         hostname: '*.amazonaws.com',
+      },
+      {
+        protocol: 'https',
+        hostname: '**.amazonaws.com',
+      },
+      {
+        protocol: 'https',
+        hostname: '*.r2.cloudflarestorage.com',
+      },
+      {
+        protocol: 'https',
+        hostname: '**.r2.cloudflarestorage.com',
       },
       {
         protocol: 'https',

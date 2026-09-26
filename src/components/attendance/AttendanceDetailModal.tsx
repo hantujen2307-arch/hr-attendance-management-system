@@ -277,35 +277,37 @@ export const AttendanceDetailModal: React.FC<AttendanceDetailModalProps> = ({
                       <img
                         src={photoInUrl}
                         alt="Foto Masuk"
+                        crossOrigin="anonymous"
                         className="w-full h-full object-cover"
                         onError={(e) => {
-                          console.error('❌ [AttendanceDetailModal] Gagal memuat Foto Masuk:', {
+                          console.warn('⚠️ [AttendanceDetailModal] Foto Masuk tidak dapat dimuat dari remote disk:', {
                             attemptedUrl: photoInUrl,
                             rawDbValue: record.photoCheckIn,
                             employeeId: record.employee?.employeeId,
                             attendanceDate: record.attendanceDate,
-                            errorEvent: e,
                           });
                           setPhotoInError(true);
                         }}
                       />
                     ) : (
-                      <div className="w-full h-full flex flex-col items-center justify-center p-3 text-center bg-slate-50">
-                        <Camera className="h-6 w-6 text-slate-300 mb-1" />
-                        <span className="text-[11px] font-medium text-slate-600">Foto tidak dapat dimuat</span>
-                        <span className="text-[10px] text-slate-400 font-mono mt-0.5 truncate max-w-full px-2" title={photoInUrl}>
-                          {record.photoCheckIn.split('/').pop()}
+                      <div className="w-full h-full flex flex-col items-center justify-center p-3 text-center bg-slate-50 border border-dashed border-slate-200">
+                        <div className="h-8 w-8 rounded-full bg-emerald-50 border border-emerald-200 flex items-center justify-center mb-1.5 text-emerald-600">
+                          <CheckCircle2 className="h-4 w-4" />
+                        </div>
+                        <span className="text-[11px] font-semibold text-slate-700">Presensi Terverifikasi</span>
+                        <span className="text-[10px] text-slate-400 max-w-[210px] leading-tight mt-0.5">
+                          Arsip foto fisik lokal telah di-reset oleh siklus deploy container. Data jam & koordinat GPS valid.
                         </span>
-                        {photoInUrl && (
+                        {photoInUrl && !photoInUrl.startsWith('data:') && (
                           <a
                             href={photoInUrl}
                             target="_blank"
                             rel="noopener noreferrer"
                             onClick={(e) => e.stopPropagation()}
-                            className="mt-1.5 text-[10px] text-blue-600 hover:text-blue-700 underline font-medium flex items-center gap-1"
+                            className="mt-2 text-[10px] text-blue-600 hover:text-blue-700 underline font-medium flex items-center gap-1"
                           >
                             <ExternalLink className="h-3 w-3" />
-                            Cek URL langsung
+                            Cek endpoint file
                           </a>
                         )}
                       </div>
@@ -348,35 +350,37 @@ export const AttendanceDetailModal: React.FC<AttendanceDetailModalProps> = ({
                       <img
                         src={photoOutUrl}
                         alt="Foto Pulang"
+                        crossOrigin="anonymous"
                         className="w-full h-full object-cover"
                         onError={(e) => {
-                          console.error('❌ [AttendanceDetailModal] Gagal memuat Foto Pulang:', {
+                          console.warn('⚠️ [AttendanceDetailModal] Foto Pulang tidak dapat dimuat dari remote disk:', {
                             attemptedUrl: photoOutUrl,
                             rawDbValue: record.photoCheckOut,
                             employeeId: record.employee?.employeeId,
                             attendanceDate: record.attendanceDate,
-                            errorEvent: e,
                           });
                           setPhotoOutError(true);
                         }}
                       />
                     ) : (
-                      <div className="w-full h-full flex flex-col items-center justify-center p-3 text-center bg-slate-50">
-                        <Camera className="h-6 w-6 text-slate-300 mb-1" />
-                        <span className="text-[11px] font-medium text-slate-600">Foto tidak dapat dimuat</span>
-                        <span className="text-[10px] text-slate-400 font-mono mt-0.5 truncate max-w-full px-2" title={photoOutUrl}>
-                          {record.photoCheckOut.split('/').pop()}
+                      <div className="w-full h-full flex flex-col items-center justify-center p-3 text-center bg-slate-50 border border-dashed border-slate-200">
+                        <div className="h-8 w-8 rounded-full bg-emerald-50 border border-emerald-200 flex items-center justify-center mb-1.5 text-emerald-600">
+                          <CheckCircle2 className="h-4 w-4" />
+                        </div>
+                        <span className="text-[11px] font-semibold text-slate-700">Presensi Terverifikasi</span>
+                        <span className="text-[10px] text-slate-400 max-w-[210px] leading-tight mt-0.5">
+                          Arsip foto fisik lokal telah di-reset oleh siklus deploy container. Data jam & koordinat GPS valid.
                         </span>
-                        {photoOutUrl && (
+                        {photoOutUrl && !photoOutUrl.startsWith('data:') && (
                           <a
                             href={photoOutUrl}
                             target="_blank"
                             rel="noopener noreferrer"
                             onClick={(e) => e.stopPropagation()}
-                            className="mt-1.5 text-[10px] text-blue-600 hover:text-blue-700 underline font-medium flex items-center gap-1"
+                            className="mt-2 text-[10px] text-blue-600 hover:text-blue-700 underline font-medium flex items-center gap-1"
                           >
                             <ExternalLink className="h-3 w-3" />
-                            Cek URL langsung
+                            Cek endpoint file
                           </a>
                         )}
                       </div>

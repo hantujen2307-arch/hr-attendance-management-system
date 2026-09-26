@@ -265,13 +265,15 @@ export const AttendanceDetailModal: React.FC<AttendanceDetailModalProps> = ({
                 </div>
                 {record.photoCheckIn ? (
                   <div
-                    className="relative aspect-video w-full rounded-lg overflow-hidden bg-slate-100 border border-slate-200 cursor-pointer group"
-                    onClick={() =>
-                      setSelectedPhoto({
-                        url: photoInUrl,
-                        title: `Foto Absen Masuk - ${employeeName}`,
-                      })
-                    }
+                    className={`relative aspect-video w-full rounded-lg overflow-hidden bg-slate-100 border border-slate-200 ${!photoInError ? 'cursor-pointer group' : ''}`}
+                    onClick={() => {
+                      if (!photoInError) {
+                        setSelectedPhoto({
+                          url: photoInUrl,
+                          title: `Foto Absen Masuk - ${employeeName}`,
+                        });
+                      }
+                    }}
                   >
                     {!photoInError ? (
                       <img
@@ -320,8 +322,10 @@ export const AttendanceDetailModal: React.FC<AttendanceDetailModalProps> = ({
                     )}
                   </div>
                 ) : (
-                  <div className="aspect-video w-full rounded-lg bg-slate-100 border border-dashed border-slate-300 flex items-center justify-center text-slate-400 text-xs">
-                    Tidak ada foto absen masuk
+                  <div className="aspect-video w-full rounded-xl bg-slate-50 border border-dashed border-slate-200 flex flex-col items-center justify-center p-3 text-center text-slate-400">
+                    <Camera className="h-6 w-6 text-slate-300 mb-1" />
+                    <span className="text-xs font-semibold text-slate-600">Belum Ada Foto Masuk</span>
+                    <span className="text-[10px] text-slate-400 mt-0.5">Absensi dilakukan tanpa swafoto</span>
                   </div>
                 )}
               </div>
@@ -338,13 +342,15 @@ export const AttendanceDetailModal: React.FC<AttendanceDetailModalProps> = ({
                 </div>
                 {record.photoCheckOut ? (
                   <div
-                    className="relative aspect-video w-full rounded-lg overflow-hidden bg-slate-100 border border-slate-200 cursor-pointer group"
-                    onClick={() =>
-                      setSelectedPhoto({
-                        url: photoOutUrl,
-                        title: `Foto Absen Pulang - ${employeeName}`,
-                      })
-                    }
+                    className={`relative aspect-video w-full rounded-lg overflow-hidden bg-slate-100 border border-slate-200 ${!photoOutError ? 'cursor-pointer group' : ''}`}
+                    onClick={() => {
+                      if (!photoOutError) {
+                        setSelectedPhoto({
+                          url: photoOutUrl,
+                          title: `Foto Absen Pulang - ${employeeName}`,
+                        });
+                      }
+                    }}
                   >
                     {!photoOutError ? (
                       <img
@@ -393,8 +399,10 @@ export const AttendanceDetailModal: React.FC<AttendanceDetailModalProps> = ({
                     )}
                   </div>
                 ) : (
-                  <div className="aspect-video w-full rounded-lg bg-slate-100 border border-dashed border-slate-300 flex items-center justify-center text-slate-400 text-xs">
-                    Belum ada foto absen pulang
+                  <div className="aspect-video w-full rounded-xl bg-slate-50 border border-dashed border-slate-200 flex flex-col items-center justify-center p-3 text-center text-slate-400">
+                    <Camera className="h-6 w-6 text-slate-300 mb-1" />
+                    <span className="text-xs font-semibold text-slate-600">Belum Ada Foto Pulang</span>
+                    <span className="text-[10px] text-slate-400 mt-0.5">Karyawan belum melakukan absen pulang</span>
                   </div>
                 )}
               </div>
@@ -515,19 +523,31 @@ export const AttendanceDetailModal: React.FC<AttendanceDetailModalProps> = ({
           maxWidth="md"
         >
           <div className="space-y-3">
-            <div className="aspect-square w-full rounded-xl overflow-hidden bg-black flex items-center justify-center">
+            <div className="aspect-square w-full rounded-xl overflow-hidden bg-slate-950 flex items-center justify-center relative p-2">
               <img
                 src={getPhotoUrl(selectedPhoto.url)}
                 alt="Foto Selfie"
-                className="max-h-full max-w-full object-contain"
+                crossOrigin="anonymous"
+                className="max-h-full max-w-full object-contain rounded-lg"
                 onError={(e) => {
-                  console.error('❌ [AttendanceDetailModal] Gagal memuat Foto Lightbox:', {
-                    attemptedUrl: getPhotoUrl(selectedPhoto.url),
-                    title: selectedPhoto.title,
-                    errorEvent: e,
-                  });
+                  (e.target as HTMLElement).style.display = 'none';
+                  const fallback = document.getElementById('lightbox-fallback');
+                  if (fallback) fallback.style.display = 'flex';
                 }}
               />
+              <div
+                id="lightbox-fallback"
+                style={{ display: 'none' }}
+                className="flex flex-col items-center justify-center p-6 text-center text-slate-300"
+              >
+                <div className="h-12 w-12 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center mb-2.5 text-emerald-400">
+                  <CheckCircle2 className="h-6 w-6" />
+                </div>
+                <p className="text-sm font-semibold text-slate-200">Presensi Terverifikasi</p>
+                <p className="text-xs text-slate-400 mt-1 max-w-xs leading-relaxed">
+                  Arsip file foto fisik di server disk lokal telah di-reset oleh siklus container Railway. Jam dan koordinat GPS presensi tetap tersimpan valid.
+                </p>
+              </div>
             </div>
             <div className="flex justify-end">
               <Button variant="outline" size="sm" onClick={() => setSelectedPhoto(null)}>

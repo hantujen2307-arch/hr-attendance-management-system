@@ -4,7 +4,7 @@ import { ValidationPipe } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import helmet from 'helmet';
-import { json, urlencoded } from 'express';
+import express, { json, urlencoded } from 'express';
 import { join, resolve } from 'path';
 import * as fs from 'fs';
 import { AppModule } from './app.module';
@@ -44,49 +44,41 @@ async function bootstrap() {
     }
   }
 
-  // Static options with CORS and CORP headers for cross-origin image embedding
-  const staticOptions = {
-    setHeaders: (res: any) => {
-      res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
-      res.setHeader('Access-Control-Allow-Origin', '*');
-      res.setHeader('Cache-Control', 'public, max-age=86400');
-    },
-  };
-
-  // Serve static assets publicly under /uploads prefix
-  app.useStaticAssets(join(__dirname, '..', 'public', 'uploads'), {
-    prefix: '/uploads/',
-    ...staticOptions,
-  });
-  app.useStaticAssets(join(__dirname, '..', 'uploads'), {
-    prefix: '/uploads/',
-    ...staticOptions,
-  });
-  app.useStaticAssets(resolve(process.cwd(), 'public', 'uploads'), {
-    prefix: '/uploads/',
-    ...staticOptions,
-  });
-  app.useStaticAssets(resolve(process.cwd(), 'uploads'), {
-    prefix: '/uploads/',
-    ...staticOptions,
+  // Explicit CORS & security headers middleware for static uploads
+  app.use(['/uploads', '/api/uploads'], (req: any, res: any, next: any) => {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
+    res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+    res.setHeader('Cache-Control', 'public, max-age=86400');
+    if (req.method === 'OPTIONS') {
+      return res.sendStatus(200);
+    }
+    next();
   });
 
-  // Also mount under /api/uploads prefix in case client uses API prefix
-  app.useStaticAssets(join(__dirname, '..', 'public', 'uploads'), {
-    prefix: '/api/uploads/',
-    ...staticOptions,
-  });
-  app.useStaticAssets(join(__dirname, '..', 'uploads'), {
-    prefix: '/api/uploads/',
-    ...staticOptions,
-  });
-  app.useStaticAssets(resolve(process.cwd(), 'public', 'uploads'), {
-    prefix: '/api/uploads/',
-    ...staticOptions,
-  });
-  app.useStaticAssets(resolve(process.cwd(), 'uploads'), {
-    prefix: '/api/uploads/',
-    ...staticOptions,
+  // Serve static assets using standard express.static middleware across multiple possible disk paths
+  const staticUploadPaths = [
+    join(__dirname, '..', 'public', 'uploads'),
+    join(__dirname, '..', 'uploads'),
+    resolve(process.cwd(), 'public', 'uploads'),
+    resolve(process.cwd(), 'uploads'),
+  ];
+
+  for (const uploadPath of staticUploadPaths) {
+    app.use('/uploads', express.static(uploadPath));
+    app.use('/api/uploads', express.static(uploadPath));
+  }
+
+  // Graceful fallback for missing/deleted static files instead of raw Express HTML "Cannot GET /uploads/..."
+  app.use(['/uploads', '/api/uploads'], (req: any, res: any) => {
+    res.status(404).json({
+      statusCode: 404,
+      error: 'Not Found',
+      message:
+        'Foto tidak ditemukan di disk lokal server. Kemungkinan file terhapus saat siklus restart container Railway.',
+      path: req.originalUrl,
+    });
   });
 
   // Set global API prefix

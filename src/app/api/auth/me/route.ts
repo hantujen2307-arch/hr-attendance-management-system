@@ -6,10 +6,11 @@ import { prisma } from '@/lib/prisma';
 import { verifyJwt } from '@/lib/jwt';
 
 export async function GET(request: NextRequest) {
+  const token =
+    request.cookies.get('access_token')?.value ||
+    request.cookies.get('auth_token')?.value;
+
   try {
-    const token =
-      request.cookies.get('access_token')?.value ||
-      request.cookies.get('auth_token')?.value;
 
     if (!token) {
       return NextResponse.json(
@@ -98,7 +99,30 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('Error in /api/auth/me route:', error);
+    console.warn('[AUTH_ME] Direct Prisma query failed, attempting Railway backend fallback:', error);
+    try {
+      const BACKEND_URL =
+        process.env.BACKEND_API_URL ||
+        'https://hr-attendance-management-system-production.up.railway.app/api';
+      const backendRes = await fetch(`${BACKEND_URL}/auth/me`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        cache: 'no-store',
+      });
+      if (backendRes.ok) {
+        const backendUser = await backendRes.json();
+        return NextResponse.json(backendUser, {
+          status: 200,
+          headers: {
+            'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
+          },
+        });
+      }
+    } catch (backendErr) {
+      console.error('[AUTH_ME_BACKEND_FALLBACK_ERROR]', backendErr);
+    }
     return NextResponse.json(
       { message: 'Failed to authenticate user session' },
       {

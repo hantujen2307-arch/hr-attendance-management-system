@@ -16,6 +16,7 @@ import {
   Eye,
   Building2,
   Briefcase,
+  ExternalLink,
 } from 'lucide-react';
 import { formatDate, getPhotoUrl } from '@/lib/utils';
 import { AttendanceMap } from './AttendanceMap';
@@ -125,6 +126,9 @@ export const AttendanceDetailModal: React.FC<AttendanceDetailModalProps> = ({
   const employeeName = record.employee
     ? `${record.employee.firstName} ${record.employee.lastName}`
     : 'Unknown Employee';
+
+  const photoInUrl = getPhotoUrl(record.photoCheckIn);
+  const photoOutUrl = getPhotoUrl(record.photoCheckOut);
 
   const officeLat = record.setting?.latitude ?? -6.2088;
   const officeLng = record.setting?.longitude ?? 106.8456;
@@ -264,25 +268,46 @@ export const AttendanceDetailModal: React.FC<AttendanceDetailModalProps> = ({
                     className="relative aspect-video w-full rounded-lg overflow-hidden bg-slate-100 border border-slate-200 cursor-pointer group"
                     onClick={() =>
                       setSelectedPhoto({
-                        url: getPhotoUrl(record.photoCheckIn),
+                        url: photoInUrl,
                         title: `Foto Absen Masuk - ${employeeName}`,
                       })
                     }
                   >
                     {!photoInError ? (
                       <img
-                        src={getPhotoUrl(record.photoCheckIn)}
+                        src={photoInUrl}
                         alt="Foto Masuk"
                         className="w-full h-full object-cover"
-                        onError={() => setPhotoInError(true)}
+                        onError={(e) => {
+                          console.error('❌ [AttendanceDetailModal] Gagal memuat Foto Masuk:', {
+                            attemptedUrl: photoInUrl,
+                            rawDbValue: record.photoCheckIn,
+                            employeeId: record.employee?.employeeId,
+                            attendanceDate: record.attendanceDate,
+                            errorEvent: e,
+                          });
+                          setPhotoInError(true);
+                        }}
                       />
                     ) : (
                       <div className="w-full h-full flex flex-col items-center justify-center p-3 text-center bg-slate-50">
                         <Camera className="h-6 w-6 text-slate-300 mb-1" />
                         <span className="text-[11px] font-medium text-slate-600">Foto tidak dapat dimuat</span>
-                        <span className="text-[10px] text-slate-400 font-mono mt-0.5 truncate max-w-full px-2">
+                        <span className="text-[10px] text-slate-400 font-mono mt-0.5 truncate max-w-full px-2" title={photoInUrl}>
                           {record.photoCheckIn.split('/').pop()}
                         </span>
+                        {photoInUrl && (
+                          <a
+                            href={photoInUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={(e) => e.stopPropagation()}
+                            className="mt-1.5 text-[10px] text-blue-600 hover:text-blue-700 underline font-medium flex items-center gap-1"
+                          >
+                            <ExternalLink className="h-3 w-3" />
+                            Cek URL langsung
+                          </a>
+                        )}
                       </div>
                     )}
                     {!photoInError && (
@@ -314,25 +339,46 @@ export const AttendanceDetailModal: React.FC<AttendanceDetailModalProps> = ({
                     className="relative aspect-video w-full rounded-lg overflow-hidden bg-slate-100 border border-slate-200 cursor-pointer group"
                     onClick={() =>
                       setSelectedPhoto({
-                        url: getPhotoUrl(record.photoCheckOut),
+                        url: photoOutUrl,
                         title: `Foto Absen Pulang - ${employeeName}`,
                       })
                     }
                   >
                     {!photoOutError ? (
                       <img
-                        src={getPhotoUrl(record.photoCheckOut)}
+                        src={photoOutUrl}
                         alt="Foto Pulang"
                         className="w-full h-full object-cover"
-                        onError={() => setPhotoOutError(true)}
+                        onError={(e) => {
+                          console.error('❌ [AttendanceDetailModal] Gagal memuat Foto Pulang:', {
+                            attemptedUrl: photoOutUrl,
+                            rawDbValue: record.photoCheckOut,
+                            employeeId: record.employee?.employeeId,
+                            attendanceDate: record.attendanceDate,
+                            errorEvent: e,
+                          });
+                          setPhotoOutError(true);
+                        }}
                       />
                     ) : (
                       <div className="w-full h-full flex flex-col items-center justify-center p-3 text-center bg-slate-50">
                         <Camera className="h-6 w-6 text-slate-300 mb-1" />
                         <span className="text-[11px] font-medium text-slate-600">Foto tidak dapat dimuat</span>
-                        <span className="text-[10px] text-slate-400 font-mono mt-0.5 truncate max-w-full px-2">
+                        <span className="text-[10px] text-slate-400 font-mono mt-0.5 truncate max-w-full px-2" title={photoOutUrl}>
                           {record.photoCheckOut.split('/').pop()}
                         </span>
+                        {photoOutUrl && (
+                          <a
+                            href={photoOutUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={(e) => e.stopPropagation()}
+                            className="mt-1.5 text-[10px] text-blue-600 hover:text-blue-700 underline font-medium flex items-center gap-1"
+                          >
+                            <ExternalLink className="h-3 w-3" />
+                            Cek URL langsung
+                          </a>
+                        )}
                       </div>
                     )}
                     {!photoOutError && (
@@ -470,6 +516,13 @@ export const AttendanceDetailModal: React.FC<AttendanceDetailModalProps> = ({
                 src={getPhotoUrl(selectedPhoto.url)}
                 alt="Foto Selfie"
                 className="max-h-full max-w-full object-contain"
+                onError={(e) => {
+                  console.error('❌ [AttendanceDetailModal] Gagal memuat Foto Lightbox:', {
+                    attemptedUrl: getPhotoUrl(selectedPhoto.url),
+                    title: selectedPhoto.title,
+                    errorEvent: e,
+                  });
+                }}
               />
             </div>
             <div className="flex justify-end">

@@ -127,6 +127,7 @@ export class AttendanceService {
 
       const filename = `${Date.now()}-${Math.random().toString(36).substring(2, 8)}-${type}.${ext}`;
 
+      let writeSuccess = false;
       for (const baseDir of baseDirs) {
         try {
           const targetFolder = path.join(baseDir, relativeFolder);
@@ -134,12 +135,20 @@ export class AttendanceService {
             fs.mkdirSync(targetFolder, { recursive: true });
           }
           fs.writeFileSync(path.join(targetFolder, filename), buffer);
+          writeSuccess = true;
         } catch {
           // Ignore directory errors for alternative paths
         }
       }
 
-      return `/uploads/attendance-photos/${relativeFolder}/${filename}`;
+      if (writeSuccess) {
+        return `/uploads/attendance-photos/${relativeFolder}/${filename}`;
+      }
+
+      // Fallback if local filesystem write failed: store Base64 data URI directly
+      return photoData.startsWith('data:image/')
+        ? photoData
+        : `data:image/${ext === 'png' ? 'png' : ext === 'webp' ? 'webp' : 'jpeg'};base64,${base64Clean}`;
     } catch (err: any) {
       if (err instanceof BadRequestException) throw err;
       console.error('Failed to save attendance photo:', err);

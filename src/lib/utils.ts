@@ -162,7 +162,8 @@ export function getEmploymentStatusStyle(status: EmploymentStatus): {
  * - Blob URLs (blob:...) -> returns as-is
  * - Absolute URLs (http://, https://) -> returns as-is
  * - Raw base64 string without data prefix (starts with /9j/, iVBORw, etc.) -> prefixes with data:image/...;base64,
- * - Relative paths (/uploads/...) -> prepends full Railway backend URL
+ * - Bare filenames/keys (e.g. 1790441313950-v3s9wc-check-out.jpg) -> maps to /uploads/attendance-photos/...
+ * - Relative paths (/uploads/...) -> prepends public storage or Railway backend base URL
  */
 export function getPhotoUrl(photoUrl?: string | null): string {
   if (!photoUrl || typeof photoUrl !== 'string') return '';
@@ -174,7 +175,7 @@ export function getPhotoUrl(photoUrl?: string | null): string {
     return trimmed;
   }
 
-  // 2. Absolute URLs (already hosted on Cloudinary, S3, or Railway)
+  // 2. Absolute URLs (already hosted on Cloudinary, Supabase Storage, S3, or Railway)
   if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
     return trimmed;
   }
@@ -190,14 +191,34 @@ export function getPhotoUrl(photoUrl?: string | null): string {
     return `data:image/webp;base64,${trimmed}`;
   }
 
-  // 4. Relative paths (e.g. /uploads/attendance-photos/...) -> Prepend Railway Backend URL
-  const backendBase = (
+  // 4. Resolve Storage / Backend Base URL from environment variables
+  const storageBase = (
+    process.env.NEXT_PUBLIC_STORAGE_URL ||
+    process.env.NEXT_PUBLIC_SUPABASE_STORAGE_URL ||
+    process.env.NEXT_PUBLIC_CLOUDINARY_URL ||
+    process.env.NEXT_PUBLIC_S3_URL ||
     process.env.NEXT_PUBLIC_BACKEND_URL ||
     process.env.NEXT_PUBLIC_API_URL?.replace(/\/api\/?$/, '') ||
     'https://hr-attendance-management-system-production.up.railway.app'
   ).replace(/\/+$/, '');
 
-  const cleanPath = trimmed.startsWith('/') ? trimmed : `/${trimmed}`;
-  return `${backendBase}${cleanPath}`;
+  // 5. Handle bare filename/key vs relative path
+  let cleanPath = trimmed;
+  if (!cleanPath.includes('/')) {
+    // Bare filename e.g. "1790441313950-v3s9wc-check-out.jpg"
+    cleanPath = `/uploads/attendance-photos/${cleanPath}`;
+  } else if (!cleanPath.startsWith('/uploads/') && !cleanPath.startsWith('uploads/')) {
+    if (cleanPath.startsWith('attendance-photos/') || cleanPath.startsWith('/attendance-photos/')) {
+      cleanPath = `/uploads/${cleanPath.replace(/^\/+/, '')}`;
+    } else {
+      const stripped = cleanPath.replace(/^\/+/, '');
+      cleanPath = `/uploads/${stripped}`;
+    }
+  } else {
+    cleanPath = cleanPath.startsWith('/') ? cleanPath : `/${cleanPath}`;
+  }
+
+  return `${storageBase}${cleanPath}`;
 }
+
 

@@ -17,13 +17,24 @@ export async function PATCH(request: NextRequest) {
 
     const body = await request.json().catch(() => ({}));
 
+    // Defensive payload normalization: extract photo from any alias, send only valid whitelisted fields
+    const photo = body.photo || body.photoUrl || body.checkOutPhoto || body.photoCheckOut;
+    const sanitizedPayload: Record<string, any> = {
+      latitude: body.latitude,
+      longitude: body.longitude,
+      photo,
+    };
+    if (typeof body.accuracy === 'number') {
+      sanitizedPayload.accuracy = body.accuracy;
+    }
+
     const backendResponse = await fetch(`${BACKEND_URL}/attendance/check-out`, {
       method: 'PATCH',
       headers: {
         Authorization: `Bearer ${token}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(body),
+      body: JSON.stringify(sanitizedPayload),
     });
 
     const data = await backendResponse.json();

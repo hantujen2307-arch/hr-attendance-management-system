@@ -327,9 +327,6 @@ export const AttendanceCaptureModal: React.FC<AttendanceCaptureModalProps> = ({
         longitude: location.longitude,
         accuracy: location.accuracy,
         photo: capturedPhoto,
-        photoUrl: capturedPhoto,
-        checkInPhoto: mode === 'check-in' ? capturedPhoto : undefined,
-        checkOutPhoto: mode === 'check-out' ? capturedPhoto : undefined,
       };
 
       const res = await fetch(endpoint, {

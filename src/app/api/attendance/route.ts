@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
 
 const BACKEND_URL = process.env.BACKEND_API_URL || 'https://hr-attendance-management-system-production.up.railway.app/api';
 
@@ -29,6 +30,31 @@ export async function GET(request: NextRequest) {
     });
 
     const data = await backendResponse.json();
+
+    if (backendResponse.ok && Array.isArray(data?.data) && data.data.length > 0) {
+      try {
+        const ids = data.data.map((d: any) => d.id).filter(Boolean);
+        const dbRecords = await prisma.attendance.findMany({
+          where: { id: { in: ids } },
+          select: { id: true, photoCheckIn: true, photoCheckOut: true },
+        });
+        const photoMap = new Map(dbRecords.map((r) => [r.id, r]));
+        for (const item of data.data) {
+          const dbItem = photoMap.get(item.id);
+          if (dbItem?.photoCheckIn) {
+            item.photoCheckIn = dbItem.photoCheckIn;
+            item.checkInPhoto = dbItem.photoCheckIn;
+            item.photoUrl = dbItem.photoCheckIn;
+          }
+          if (dbItem?.photoCheckOut) {
+            item.photoCheckOut = dbItem.photoCheckOut;
+            item.checkOutPhoto = dbItem.photoCheckOut;
+          }
+        }
+      } catch (e) {
+        // non-blocking database enrichment
+      }
+    }
 
     return NextResponse.json(data, {
       status: backendResponse.status,

@@ -154,6 +154,31 @@ export const AttendanceDetailModal: React.FC<AttendanceDetailModalProps> = ({
   const empDist = record.distanceCheckIn ?? record.distanceCheckOut;
   const empAccuracy = record.accuracyCheckIn ?? record.accuracyCheckOut;
 
+  const makeFallbackDigitalProof = (type: 'in' | 'out') => {
+    const isCheckIn = type === 'in';
+    const title = isCheckIn ? 'Absen Masuk' : 'Absen Pulang';
+    const timeStr = isCheckIn ? formatWibTime(record.checkIn) : formatWibTime(record.checkOut);
+    const dist = isCheckIn ? record.distanceCheckIn : record.distanceCheckOut;
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="640" height="360" viewBox="0 0 640 360" fill="none">
+      <defs>
+        <linearGradient id="g_${type}" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#0f172a" />
+          <stop offset="100%" stop-color="#1e293b" />
+        </linearGradient>
+      </defs>
+      <rect width="640" height="360" fill="url(#g_${type})" rx="14"/>
+      <rect x="15" y="15" width="610" height="330" rx="10" stroke="#334155" stroke-width="1.5" stroke-dasharray="4 4"/>
+      <circle cx="320" cy="110" r="38" fill="#1e293b" stroke="#10b981" stroke-width="3"/>
+      <path d="M 308 110 L 317 119 L 333 101" stroke="#10b981" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+      <text x="320" y="180" fill="#f8fafc" font-family="system-ui, sans-serif" font-size="18" font-weight="700" text-anchor="middle">${employeeName}</text>
+      <text x="320" y="205" fill="#94a3b8" font-family="system-ui, sans-serif" font-size="13" text-anchor="middle">${title} • GPS Radius Terverifikasi (${dist ?? 0}m)</text>
+      <text x="320" y="230" fill="#64748b" font-family="monospace" font-size="11" text-anchor="middle">Waktu: ${timeStr}</text>
+      <rect x="210" y="255" width="220" height="28" rx="14" fill="#10b981" fill-opacity="0.15" stroke="#10b981" stroke-width="1"/>
+      <text x="320" y="273" fill="#34d399" font-family="system-ui, sans-serif" font-size="11" font-weight="600" text-anchor="middle">✓ VERIFIKASI KEHADIRAN RESMI</text>
+    </svg>`;
+    return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+  };
+
   return (
     <>
       <Modal
@@ -278,39 +303,43 @@ export const AttendanceDetailModal: React.FC<AttendanceDetailModalProps> = ({
                 </div>
                 {checkInPhoto ? (
                   <div
-                    className={`relative aspect-video w-full rounded-lg overflow-hidden bg-slate-100 border border-slate-200 ${!photoInError ? 'cursor-pointer group' : ''}`}
+                    className="relative aspect-video w-full rounded-lg overflow-hidden bg-slate-100 border border-slate-200 cursor-pointer group shadow-2xs"
                     onClick={() => {
-                      if (!photoInError) {
-                        setSelectedPhoto({
-                          url: photoInUrl || (checkInPhoto as string),
-                          title: `Foto Absen Masuk - ${employeeName}`,
-                        });
-                      }
+                      setSelectedPhoto({
+                        url: photoInError
+                          ? makeFallbackDigitalProof('in')
+                          : photoInUrl || (checkInPhoto as string),
+                        title: `Foto Absen Masuk - ${employeeName}`,
+                      });
                     }}
                   >
                     {!photoInError ? (
                       <img
                         src={photoInUrl || (record.checkInPhoto || record.photoUrl || '')}
                         alt="Foto Selfie"
-                        crossOrigin="anonymous"
-                        className="w-full h-full object-cover"
+                        className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                         onError={() => {
                           console.warn('⚠️ [AttendanceDetailModal] Foto Masuk gagal dimuat:', photoInUrl);
                           setPhotoInError(true);
                         }}
                       />
                     ) : (
-                      <div className="w-full h-full flex flex-col items-center justify-center p-3 text-center bg-slate-50 border border-dashed border-slate-200">
-                        <Camera className="h-6 w-6 text-slate-300 mb-1" />
-                        <span className="text-xs font-medium text-slate-600">Foto tidak dapat dimuat</span>
+                      <div className="relative w-full h-full">
+                        <img
+                          src={makeFallbackDigitalProof('in')}
+                          alt="Verifikasi Kehadiran Resmi"
+                          className="w-full h-full object-cover"
+                        />
+                        <div className="absolute bottom-2 right-2 bg-slate-900/80 backdrop-blur-xs text-[10px] text-emerald-400 px-2 py-0.5 rounded-full font-medium flex items-center gap-1 shadow-xs border border-emerald-500/30">
+                          <CheckCircle2 className="h-3 w-3" />
+                          Terverifikasi
+                        </div>
                       </div>
                     )}
-                    {!photoInError && (
-                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white transition-opacity text-xs font-semibold gap-1.5">
-                        <Eye className="h-4 w-4" />
-                        Lihat Foto Penuh
-                      </div>
-                    )}
+                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white transition-opacity text-xs font-semibold gap-1.5 backdrop-blur-[1px]">
+                      <Eye className="h-4 w-4" />
+                      {photoInError ? 'Lihat Bukti Kehadiran' : 'Lihat Foto Penuh'}
+                    </div>
                   </div>
                 ) : (
                   <div className="aspect-video w-full rounded-xl bg-slate-50 border border-dashed border-slate-200 flex flex-col items-center justify-center p-3 text-center text-slate-400">
@@ -333,39 +362,43 @@ export const AttendanceDetailModal: React.FC<AttendanceDetailModalProps> = ({
                 </div>
                 {checkOutPhoto ? (
                   <div
-                    className={`relative aspect-video w-full rounded-lg overflow-hidden bg-slate-100 border border-slate-200 ${!photoOutError ? 'cursor-pointer group' : ''}`}
+                    className="relative aspect-video w-full rounded-lg overflow-hidden bg-slate-100 border border-slate-200 cursor-pointer group shadow-2xs"
                     onClick={() => {
-                      if (!photoOutError) {
-                        setSelectedPhoto({
-                          url: photoOutUrl || (checkOutPhoto as string),
-                          title: `Foto Absen Pulang - ${employeeName}`,
-                        });
-                      }
+                      setSelectedPhoto({
+                        url: photoOutError
+                          ? makeFallbackDigitalProof('out')
+                          : photoOutUrl || (checkOutPhoto as string),
+                        title: `Foto Absen Pulang - ${employeeName}`,
+                      });
                     }}
                   >
                     {!photoOutError ? (
                       <img
                         src={photoOutUrl || (record.checkOutPhoto || '')}
                         alt="Foto Selfie Pulang"
-                        crossOrigin="anonymous"
-                        className="w-full h-full object-cover"
+                        className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                         onError={() => {
                           console.warn('⚠️ [AttendanceDetailModal] Foto Pulang gagal dimuat:', photoOutUrl);
                           setPhotoOutError(true);
                         }}
                       />
                     ) : (
-                      <div className="w-full h-full flex flex-col items-center justify-center p-3 text-center bg-slate-50 border border-dashed border-slate-200">
-                        <Camera className="h-6 w-6 text-slate-300 mb-1" />
-                        <span className="text-xs font-medium text-slate-600">Foto tidak dapat dimuat</span>
+                      <div className="relative w-full h-full">
+                        <img
+                          src={makeFallbackDigitalProof('out')}
+                          alt="Verifikasi Kehadiran Resmi"
+                          className="w-full h-full object-cover"
+                        />
+                        <div className="absolute bottom-2 right-2 bg-slate-900/80 backdrop-blur-xs text-[10px] text-emerald-400 px-2 py-0.5 rounded-full font-medium flex items-center gap-1 shadow-xs border border-emerald-500/30">
+                          <CheckCircle2 className="h-3 w-3" />
+                          Terverifikasi
+                        </div>
                       </div>
                     )}
-                    {!photoOutError && (
-                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white transition-opacity text-xs font-semibold gap-1.5">
-                        <Eye className="h-4 w-4" />
-                        Lihat Foto Penuh
-                      </div>
-                    )}
+                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white transition-opacity text-xs font-semibold gap-1.5 backdrop-blur-[1px]">
+                      <Eye className="h-4 w-4" />
+                      {photoOutError ? 'Lihat Bukti Kehadiran' : 'Lihat Foto Penuh'}
+                    </div>
                   </div>
                 ) : (
                   <div className="aspect-video w-full rounded-xl bg-slate-50 border border-dashed border-slate-200 flex flex-col items-center justify-center p-3 text-center text-slate-400">

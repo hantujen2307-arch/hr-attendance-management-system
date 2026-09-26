@@ -458,7 +458,6 @@ export const EmployeeCheckInCard: React.FC<EmployeeCheckInCardProps> = ({
                         <img
                           src={getPhotoUrl(attendanceRecord.checkInPhoto || attendanceRecord.photoUrl || attendanceRecord.photoCheckIn)}
                           alt="Foto Masuk"
-                          crossOrigin="anonymous"
                           className="relative h-full w-full object-cover z-1"
                           onError={(e) => {
                             (e.target as HTMLElement).style.display = 'none';
@@ -502,7 +501,6 @@ export const EmployeeCheckInCard: React.FC<EmployeeCheckInCardProps> = ({
                             <img
                               src={getPhotoUrl(attendanceRecord.checkOutPhoto || attendanceRecord.photoCheckOut)}
                               alt="Foto Pulang"
-                              crossOrigin="anonymous"
                               className="relative h-full w-full object-cover z-1"
                               onError={(e) => {
                                 (e.target as HTMLElement).style.display = 'none';

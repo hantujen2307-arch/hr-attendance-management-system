@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
 
 const BACKEND_URL = process.env.BACKEND_API_URL || 'https://hr-attendance-management-system-production.up.railway.app/api';
 
@@ -26,6 +27,26 @@ export async function GET(request: NextRequest) {
     });
 
     const data = await backendResponse.json();
+
+    if (backendResponse.ok && data?.attendance?.id) {
+      try {
+        const dbRecord = await prisma.attendance.findUnique({
+          where: { id: data.attendance.id },
+          select: { photoCheckIn: true, photoCheckOut: true },
+        });
+        if (dbRecord?.photoCheckIn) {
+          data.attendance.photoCheckIn = dbRecord.photoCheckIn;
+          data.attendance.checkInPhoto = dbRecord.photoCheckIn;
+          data.attendance.photoUrl = dbRecord.photoCheckIn;
+        }
+        if (dbRecord?.photoCheckOut) {
+          data.attendance.photoCheckOut = dbRecord.photoCheckOut;
+          data.attendance.checkOutPhoto = dbRecord.photoCheckOut;
+        }
+      } catch (err) {
+        // non-blocking database enrichment
+      }
+    }
 
     return NextResponse.json(data, {
       status: backendResponse.status,

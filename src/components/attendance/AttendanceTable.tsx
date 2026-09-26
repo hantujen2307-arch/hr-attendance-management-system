@@ -260,7 +260,6 @@ export const AttendanceTable: React.FC<AttendanceTableProps> = ({
                         <img
                           src={getPhotoUrl(record.checkInPhoto || record.photoUrl || record.photoCheckIn)}
                           alt="Selfie Masuk"
-                          crossOrigin="anonymous"
                           className="relative h-full w-full object-cover z-1"
                           onError={(e) => {
                             (e.target as HTMLElement).style.display = 'none';

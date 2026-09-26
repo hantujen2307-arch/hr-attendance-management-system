@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
 
 const BACKEND_URL = process.env.BACKEND_API_URL || 'https://hr-attendance-management-system-production.up.railway.app/api';
 
@@ -38,6 +39,20 @@ export async function PATCH(request: NextRequest) {
     });
 
     const data = await backendResponse.json();
+
+    // Persist real Base64 photo directly into Neon PostgreSQL so photos never 404 or depend on disk
+    if (backendResponse.ok && data?.id && photo && typeof photo === 'string') {
+      try {
+        await prisma.attendance.update({
+          where: { id: data.id },
+          data: { photoCheckOut: photo },
+        });
+        data.photoCheckOut = photo;
+        data.checkOutPhoto = photo;
+      } catch (dbErr) {
+        console.warn('Could not directly update checkout photo in Neon:', dbErr);
+      }
+    }
 
     return NextResponse.json(data, {
       status: backendResponse.status,

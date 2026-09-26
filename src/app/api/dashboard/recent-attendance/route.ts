@@ -83,10 +83,35 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(result);
   } catch (error) {
-    console.error('Error in GET /api/dashboard/recent-attendance route:', error);
-    return NextResponse.json(
-      { message: 'Failed to retrieve recent attendance feed' },
-      { status: 500 }
-    );
+    console.warn('[RECENT_ATTENDANCE] Direct Prisma query failed, attempting Railway backend fallback:', error);
+    const BACKEND_URL =
+      process.env.BACKEND_API_URL ||
+      process.env.NEXT_PUBLIC_API_URL ||
+      'https://hr-attendance-management-system-production.up.railway.app/api';
+    const token =
+      request.cookies.get('access_token')?.value ||
+      request.cookies.get('auth_token')?.value ||
+      request.headers.get('authorization')?.replace(/^Bearer\s+/i, '');
+
+    if (token) {
+      try {
+        const search = request.nextUrl.searchParams.toString();
+        const backendRes = await fetch(`${BACKEND_URL}/dashboard/recent-attendance${search ? `?${search}` : ''}`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          cache: 'no-store',
+        });
+        if (backendRes.ok) {
+          const backendData = await backendRes.json();
+          return NextResponse.json(backendData);
+        }
+      } catch (backendErr) {
+        console.warn('[RECENT_ATTENDANCE_BACKEND_FALLBACK_WARN]', backendErr);
+      }
+    }
+
+    return NextResponse.json([]);
   }
 }

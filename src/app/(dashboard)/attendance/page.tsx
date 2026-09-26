@@ -11,6 +11,7 @@ import { AttendanceMonthlyRecap } from '@/components/attendance/AttendanceMonthl
 import { AttendanceSettingsSection } from '@/components/settings/AttendanceSettingsSection';
 import { Card, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
+import { getAuthHeaders } from '@/lib/api';
 import {
   CalendarCheck,
   Clock,
@@ -132,7 +133,10 @@ export default function AttendancePage() {
   useEffect(() => {
     const fetchMe = async () => {
       try {
-        const res = await fetch('/api/auth/me');
+        const res = await fetch('/api/auth/me', {
+          headers: getAuthHeaders(),
+          credentials: 'include',
+        });
         if (res.ok) {
           const data = await res.json();
           setCurrentUser(data);
@@ -148,7 +152,10 @@ export default function AttendancePage() {
   useEffect(() => {
     const fetchDepts = async () => {
       try {
-        const res = await fetch('/api/departments');
+        const res = await fetch('/api/departments', {
+          headers: getAuthHeaders(),
+          credentials: 'include',
+        });
         if (res.ok) {
           const data = await res.json();
           setDepartments(Array.isArray(data) ? data : []);
@@ -164,7 +171,10 @@ export default function AttendancePage() {
   const fetchTodayData = useCallback(async () => {
     setIsSummaryLoading(true);
     try {
-      const res = await fetch('/api/attendance/today');
+      const res = await fetch('/api/attendance/today', {
+        headers: getAuthHeaders(),
+        credentials: 'include',
+      });
       if (res.ok) {
         const jsonResponse = await res.json();
         const data = jsonResponse.data || jsonResponse;
@@ -211,7 +221,10 @@ export default function AttendancePage() {
       if (selectedDepartment !== 'all') params.set('departmentId', selectedDepartment);
       if (selectedStatus !== 'all') params.set('status', selectedStatus);
 
-      const res = await fetch(`/api/attendance?${params.toString()}`);
+      const res = await fetch(`/api/attendance?${params.toString()}`, {
+        headers: getAuthHeaders(),
+        credentials: 'include',
+      });
       if (!res.ok) {
         const errorData = await res.json().catch(() => ({}));
         throw new Error(errorData.message || 'Gagal memuat catatan absensi');
@@ -581,7 +594,10 @@ export default function AttendancePage() {
               startIndex={(page - 1) * limit + 1}
               onViewDetail={async (record) => {
                 try {
-                  const res = await fetch(`/api/attendance/${record.id}`);
+                  const res = await fetch(`/api/attendance/${record.id}`, {
+                    headers: getAuthHeaders(),
+                    credentials: 'include',
+                  });
                   if (res.ok) {
                     const fullData = await res.json();
                     setSelectedDetailRecord(fullData);

@@ -5,6 +5,8 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/com
 import { formatDate } from '@/lib/utils';
 import { Calendar, BarChart2 } from 'lucide-react';
 
+import { getAuthHeaders } from '@/lib/api';
+
 interface DailyTrendItem {
   date: string;
   present: number;
@@ -32,7 +34,11 @@ export const AttendanceChart: React.FC = () => {
       const startStr = start.toISOString().split('T')[0];
 
       const res = await fetch(
-        `/api/dashboard/attendance-overview?startDate=${startStr}&endDate=${endStr}`
+        `/api/dashboard/attendance-overview?startDate=${startStr}&endDate=${endStr}`,
+        {
+          headers: getAuthHeaders(),
+          credentials: 'include',
+        }
       );
       if (!res.ok) {
         throw new Error('Failed to fetch attendance trend');

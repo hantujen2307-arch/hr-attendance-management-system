@@ -36,6 +36,17 @@ export default function LoginPage() {
         return;
       }
 
+      // Store authentication token and user profile in client storage
+      if (typeof window !== 'undefined') {
+        if (data.access_token) {
+          localStorage.setItem('access_token', data.access_token);
+          localStorage.setItem('auth_token', data.access_token);
+        }
+        if (data.user) {
+          localStorage.setItem('user', JSON.stringify(data.user));
+        }
+      }
+
       // Successful login - route to destination safely (prevent open redirect)
       let destination = '/dashboard';
       if (typeof window !== 'undefined') {

@@ -210,25 +210,36 @@ export class DashboardService {
     }
 
     // ADMIN & HR: Company-wide metrics
-    const [
-      totalEmployees,
-      attendancesToday,
-      pendingOvertime,
-      approvedOvertimes,
-      overtimeRequestsCount,
-    ] = await Promise.all([
-      this.prisma.employee.count({ where: { employmentStatus: EmploymentStatus.ACTIVE } }),
-      this.prisma.attendance.findMany({
+    const totalEmployees = await this.prisma.employee
+      .count({ where: { employmentStatus: EmploymentStatus.ACTIVE } })
+      .catch(() => 0);
+
+    const attendancesToday = await this.prisma.attendance
+      .findMany({
         where: { attendanceDate },
         select: { status: true },
-      }),
-      this.prisma.overtimeRequest.count({ where: { status: 'PENDING' } }),
-      this.prisma.overtimeRequest.findMany({
-        where: { status: 'APPROVED' },
-        select: { approvedMinutes: true },
-      }),
-      this.prisma.overtimeRequest.count(),
-    ]);
+      })
+      .catch(() => []);
+
+    let pendingOvertime = 0;
+    let approvedOvertimes: any[] = [];
+    let overtimeRequestsCount = 0;
+
+    try {
+      const [pending, approved, totalCount] = await Promise.all([
+        this.prisma.overtimeRequest.count({ where: { status: 'PENDING' } }),
+        this.prisma.overtimeRequest.findMany({
+          where: { status: 'APPROVED' },
+          select: { approvedMinutes: true },
+        }),
+        this.prisma.overtimeRequest.count(),
+      ]);
+      pendingOvertime = pending;
+      approvedOvertimes = approved;
+      overtimeRequestsCount = totalCount;
+    } catch (otError) {
+      console.warn('[DASHBOARD_OVERTIME_QUERY_WARN] Overtime tables not yet queryable:', otError);
+    }
 
     const approvedOvertime = approvedOvertimes.length;
     const totalOvertimeMinutes = approvedOvertimes.reduce(

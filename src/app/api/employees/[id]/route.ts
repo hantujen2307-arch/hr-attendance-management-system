@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const BACKEND_URL = process.env.BACKEND_API_URL || 'http://localhost:5001/api';
+const BACKEND_URL = process.env.BACKEND_API_URL || 'https://hr-attendance-management-system-production.up.railway.app/api';
 
 export async function GET(
   request: NextRequest,
@@ -8,7 +8,10 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
-    const token = request.cookies.get('access_token')?.value;
+    const token =
+      request.cookies.get('access_token')?.value ||
+      request.cookies.get('auth_token')?.value ||
+      request.headers.get('authorization')?.replace(/^Bearer\s+/i, '');
 
     if (!token) {
       return NextResponse.json(
@@ -49,7 +52,10 @@ export async function PATCH(
 ) {
   try {
     const { id } = await params;
-    const token = request.cookies.get('access_token')?.value;
+    const token =
+      request.cookies.get('access_token')?.value ||
+      request.cookies.get('auth_token')?.value ||
+      request.headers.get('authorization')?.replace(/^Bearer\s+/i, '');
 
     if (!token) {
       return NextResponse.json(
@@ -89,7 +95,10 @@ export async function DELETE(
 ) {
   try {
     const { id } = await params;
-    const token = request.cookies.get('access_token')?.value;
+    const token =
+      request.cookies.get('access_token')?.value ||
+      request.cookies.get('auth_token')?.value ||
+      request.headers.get('authorization')?.replace(/^Bearer\s+/i, '');
 
     if (!token) {
       return NextResponse.json(

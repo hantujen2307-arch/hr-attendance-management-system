@@ -8,6 +8,8 @@ import { Badge } from '@/components/ui/Badge';
 import { formatDate } from '@/lib/utils';
 import { ChevronRight, Clock, CalendarCheck } from 'lucide-react';
 
+import { getAuthHeaders } from '@/lib/api';
+
 export interface RecentAttendanceItem {
   id: string;
   employee: string;
@@ -41,7 +43,10 @@ export const RecentAttendance: React.FC<RecentAttendanceProps> = ({ records: pro
       setIsLoading(true);
       setError(null);
       try {
-        const res = await fetch('/api/dashboard/recent-attendance?limit=6');
+        const res = await fetch('/api/dashboard/recent-attendance?limit=6', {
+          headers: getAuthHeaders(),
+          credentials: 'include',
+        });
         if (!res.ok) throw new Error('Failed to fetch recent attendance');
         const data = await res.json();
         setRecords(Array.isArray(data) ? data : []);

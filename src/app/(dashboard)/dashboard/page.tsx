@@ -16,6 +16,8 @@ import { RecentAttendance } from '@/components/dashboard/RecentAttendance';
 import { EmployeeDashboardView } from '@/components/dashboard/EmployeeDashboardView';
 import { Button } from '@/components/ui/Button';
 
+import { getAuthHeaders } from '@/lib/api';
+
 interface CompanySummary {
   totalEmployees: number;
   presentToday: number;
@@ -34,9 +36,13 @@ export default function DashboardPage() {
     setIsLoading(true);
     setErrorMessage(null);
     try {
-      const res = await fetch('/api/dashboard/summary');
+      const res = await fetch('/api/dashboard/summary', {
+        headers: getAuthHeaders(),
+        credentials: 'include',
+      });
       if (!res.ok) {
-        throw new Error('Failed to fetch dashboard metrics');
+        const errJson = await res.json().catch(() => ({}));
+        throw new Error(errJson.message || 'Failed to fetch dashboard metrics');
       }
       const data = await res.json();
       setSummaryData(data);

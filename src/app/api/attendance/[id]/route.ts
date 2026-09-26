@@ -1,13 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const BACKEND_URL = process.env.BACKEND_API_URL || 'http://localhost:5001/api';
+const BACKEND_URL = process.env.BACKEND_API_URL || 'https://hr-attendance-management-system-production.up.railway.app/api';
 
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const token = request.cookies.get('access_token')?.value;
+    const token =
+      request.cookies.get('access_token')?.value ||
+      request.cookies.get('auth_token')?.value ||
+      request.headers.get('authorization')?.replace(/^Bearer\s+/i, '');
 
     if (!token) {
       return NextResponse.json(
@@ -46,7 +49,10 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const token = request.cookies.get('access_token')?.value;
+    const token =
+      request.cookies.get('access_token')?.value ||
+      request.cookies.get('auth_token')?.value ||
+      request.headers.get('authorization')?.replace(/^Bearer\s+/i, '');
 
     if (!token) {
       return NextResponse.json(

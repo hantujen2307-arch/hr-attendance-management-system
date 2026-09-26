@@ -368,6 +368,7 @@ export default function AttendancePage() {
           attendanceRecord={myTodayAttendance}
           officeSetting={officeSetting}
           onRefresh={handleRefreshAll}
+          currentUser={currentUser}
         />
       )}
 

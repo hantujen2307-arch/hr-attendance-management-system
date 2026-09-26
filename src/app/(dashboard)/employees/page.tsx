@@ -18,10 +18,16 @@ import {
   FileSpreadsheet,
   Download,
   RefreshCw,
+  Sparkles,
+  UserX,
+  CheckCircle2,
 } from 'lucide-react';
 
 export default function EmployeesPage() {
   const [currentRole, setCurrentRole] = useState<string | null>(null);
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [linkingCurrentAdmin, setLinkingCurrentAdmin] = useState(false);
+  const [linkAdminSuccess, setLinkAdminSuccess] = useState<string | null>(null);
   const [employees, setEmployees] = useState<EmployeeRecord[]>([]);
   const [stats, setStats] = useState<EmployeeStats | null>(null);
   const [departments, setDepartments] = useState<Array<{ id: string; name: string }>>([]);
@@ -63,14 +69,41 @@ export default function EmployeesPage() {
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         const u = data?.user || data?.data || data;
-        if (u?.role) {
-          setCurrentRole(u.role);
+        if (u) {
+          setCurrentUser(u);
+          if (u?.role) setCurrentRole(u.role);
         }
       })
       .catch(() => {});
 
     fetchMasterData();
   }, []);
+
+  const handleAutoLinkCurrentAdmin = async () => {
+    try {
+      setLinkingCurrentAdmin(true);
+      setLinkAdminSuccess(null);
+      const res = await fetch('/api/employees/link-user', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ autoProvision: true }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setLinkAdminSuccess(data.message || 'Profil karyawan berhasil dihubungkan.');
+        if (data.employee) {
+          setCurrentUser((prev: any) => ({ ...prev, employee: data.employee }));
+        }
+        reloadData();
+      } else {
+        alert(data.message || 'Gagal menghubungkan profil');
+      }
+    } catch (e: any) {
+      alert(e.message || 'Gagal menghubungkan profil');
+    } finally {
+      setLinkingCurrentAdmin(false);
+    }
+  };
 
   const fetchMasterData = async () => {
     try {
@@ -267,6 +300,42 @@ export default function EmployeesPage() {
           </Button>
         </div>
       </div>
+
+      {/* Unlinked Employee Profile Alert Banner */}
+      {currentUser && !currentUser.employee && (
+        <div className="p-4 bg-amber-50 border border-amber-200 rounded-2xl text-xs text-amber-900 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
+          <div className="flex items-start sm:items-center gap-3">
+            <div className="p-2 rounded-xl bg-amber-100 text-amber-700 shrink-0">
+              <UserX className="h-5 w-5" />
+            </div>
+            <div>
+              <p className="font-bold text-amber-900 text-sm">
+                Akun Administrator Belum Terhubung ke Profil Karyawan
+              </p>
+              <p className="text-amber-700 text-xs mt-0.5 leading-relaxed">
+                Akun login saat ini (<strong>{currentUser.email}</strong>) belum dipasangkan dengan data karyawan di sistem. Untuk dapat melakukan absensi mandiri, buat atau hubungkan profil karyawan sekarang.
+              </p>
+            </div>
+          </div>
+          <Button
+            variant="primary"
+            size="sm"
+            onClick={handleAutoLinkCurrentAdmin}
+            isLoading={linkingCurrentAdmin}
+            className="gap-2 text-xs bg-amber-600 hover:bg-amber-700 font-bold shrink-0 shadow-xs"
+          >
+            <Sparkles className="h-4 w-4" />
+            Hubungkan Akun Saya Otomatis
+          </Button>
+        </div>
+      )}
+
+      {linkAdminSuccess && (
+        <div className="p-3.5 bg-emerald-50 border border-emerald-200 rounded-xl text-xs text-emerald-800 flex items-center gap-2.5 shadow-2xs">
+          <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
+          <span className="font-medium">{linkAdminSuccess}</span>
+        </div>
+      )}
 
       {/* 5 KPI Statistics Cards */}
       <EmployeeStatsCards stats={stats} loading={loadingStats} />

@@ -57,7 +57,7 @@ export class AuthService {
 
     let employee = user.employee;
     if (!employee) {
-      const matchedEmployee = await this.prisma.employee.findFirst({
+      let matchedEmployee = await this.prisma.employee.findFirst({
         where: {
           OR: [
             { userId: user.id },
@@ -75,6 +75,30 @@ export class AuthService {
         },
       });
 
+      if (!matchedEmployee) {
+        const username = emailNormalized.split('@')[0].trim();
+        if (username) {
+          const unlinked = await this.prisma.employee.findFirst({
+            where: {
+              userId: null,
+              email: { startsWith: username, mode: 'insensitive' },
+            },
+            select: {
+              id: true,
+              employeeId: true,
+              firstName: true,
+              lastName: true,
+              department: { select: { id: true, name: true } },
+              position: true,
+              userId: true,
+            },
+          });
+          if (unlinked) {
+            matchedEmployee = unlinked;
+          }
+        }
+      }
+
       if (matchedEmployee) {
         if (!matchedEmployee.userId || matchedEmployee.userId !== user.id) {
           await this.prisma.employee
@@ -85,6 +109,70 @@ export class AuthService {
             .catch(() => {});
         }
         employee = matchedEmployee;
+      } else if (user.role === 'ADMIN' || user.role === 'HR') {
+        try {
+          let dept = await this.prisma.department.findFirst({
+            where: { status: 'ACTIVE' },
+            orderBy: { createdAt: 'asc' },
+          });
+          if (!dept) {
+            dept = await this.prisma.department.create({
+              data: {
+                name: 'Management',
+                code: 'MGMT',
+                status: 'ACTIVE',
+              },
+            });
+          }
+
+          const defaultShift = await this.prisma.shift.findFirst({
+            where: { status: 'ACTIVE' },
+            orderBy: { createdAt: 'asc' },
+          });
+
+          const rolePrefix = user.role === 'ADMIN' ? 'ADM' : 'HR';
+          const randomSuffix = Math.floor(1000 + Math.random() * 9000);
+          const nameParts = (user.email.split('@')[0] || 'Administrator')
+            .replace(/[._-]/g, ' ')
+            .trim()
+            .split(' ');
+          const firstName =
+            nameParts[0].charAt(0).toUpperCase() + nameParts[0].slice(1).toLowerCase();
+          const lastName =
+            nameParts.length > 1
+              ? nameParts
+                  .slice(1)
+                  .map((w: string) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+                  .join(' ')
+              : '(Staff)';
+
+          const createdEmp = await this.prisma.employee.create({
+            data: {
+              userId: user.id,
+              employeeId: `EMP-${rolePrefix}-${randomSuffix}`,
+              firstName: firstName || 'Administrator',
+              lastName: lastName || '',
+              email: emailNormalized,
+              departmentId: dept.id,
+              shiftId: defaultShift?.id || null,
+              position: user.role === 'ADMIN' ? 'System Administrator' : 'HR Specialist',
+              joinDate: new Date(),
+              employmentStatus: 'ACTIVE',
+            },
+            select: {
+              id: true,
+              employeeId: true,
+              firstName: true,
+              lastName: true,
+              department: { select: { id: true, name: true } },
+              position: true,
+              userId: true,
+            },
+          });
+          employee = createdEmp;
+        } catch (err) {
+          console.error('Auto-provisioning employee in AuthService login failed:', err);
+        }
       }
     }
 
@@ -137,7 +225,7 @@ export class AuthService {
     }
 
     if (!user.employee && user.email) {
-      const matchedEmployee = await this.prisma.employee.findFirst({
+      let matchedEmployee = await this.prisma.employee.findFirst({
         where: {
           OR: [
             { userId: user.id },
@@ -150,6 +238,25 @@ export class AuthService {
         },
       });
 
+      if (!matchedEmployee) {
+        const username = user.email.split('@')[0].trim();
+        if (username) {
+          const unlinked = await this.prisma.employee.findFirst({
+            where: {
+              userId: null,
+              email: { startsWith: username, mode: 'insensitive' },
+            },
+            include: {
+              department: true,
+              shift: true,
+            },
+          });
+          if (unlinked) {
+            matchedEmployee = unlinked;
+          }
+        }
+      }
+
       if (matchedEmployee) {
         if (!matchedEmployee.userId || matchedEmployee.userId !== user.id) {
           await this.prisma.employee
@@ -160,6 +267,65 @@ export class AuthService {
             .catch(() => {});
         }
         (user as any).employee = matchedEmployee;
+      } else if (user.role === 'ADMIN' || user.role === 'HR') {
+        try {
+          let dept = await this.prisma.department.findFirst({
+            where: { status: 'ACTIVE' },
+            orderBy: { createdAt: 'asc' },
+          });
+          if (!dept) {
+            dept = await this.prisma.department.create({
+              data: {
+                name: 'Management',
+                code: 'MGMT',
+                status: 'ACTIVE',
+              },
+            });
+          }
+
+          const defaultShift = await this.prisma.shift.findFirst({
+            where: { status: 'ACTIVE' },
+            orderBy: { createdAt: 'asc' },
+          });
+
+          const rolePrefix = user.role === 'ADMIN' ? 'ADM' : 'HR';
+          const randomSuffix = Math.floor(1000 + Math.random() * 9000);
+          const nameParts = (user.email.split('@')[0] || 'Administrator')
+            .replace(/[._-]/g, ' ')
+            .trim()
+            .split(' ');
+          const firstName =
+            nameParts[0].charAt(0).toUpperCase() + nameParts[0].slice(1).toLowerCase();
+          const lastName =
+            nameParts.length > 1
+              ? nameParts
+                  .slice(1)
+                  .map((w: string) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+                  .join(' ')
+              : '(Staff)';
+
+          const createdEmp = await this.prisma.employee.create({
+            data: {
+              userId: user.id,
+              employeeId: `EMP-${rolePrefix}-${randomSuffix}`,
+              firstName: firstName || 'Administrator',
+              lastName: lastName || '',
+              email: user.email.trim().toLowerCase(),
+              departmentId: dept.id,
+              shiftId: defaultShift?.id || null,
+              position: user.role === 'ADMIN' ? 'System Administrator' : 'HR Specialist',
+              joinDate: new Date(),
+              employmentStatus: 'ACTIVE',
+            },
+            include: {
+              department: true,
+              shift: true,
+            },
+          });
+          (user as any).employee = createdEmp;
+        } catch (err) {
+          console.error('Auto-provisioning employee in getProfile failed:', err);
+        }
       }
     }
 

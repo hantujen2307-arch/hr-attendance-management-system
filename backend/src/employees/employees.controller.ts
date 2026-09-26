@@ -215,4 +215,16 @@ export class EmployeesController {
   ) {
     return this.employeesService.remove(id, user);
   }
+
+  @Post('link-user')
+  @Roles(UserRole.ADMIN, UserRole.HR)
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Link user to an employee profile or auto-provision' })
+  @ApiResponse({ status: 200, description: 'User linked to employee successfully' })
+  linkUser(
+    @Body() dto: { employeeId?: string; userId?: string; autoProvision?: boolean },
+    @CurrentUser() user: any
+  ) {
+    return this.employeesService.linkUserToEmployee(dto, user);
+  }
 }

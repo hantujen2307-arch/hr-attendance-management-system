@@ -5,6 +5,7 @@ import { Card, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Modal } from '@/components/ui/Modal';
+import Link from 'next/link';
 import {
   LogIn,
   LogOut,
@@ -16,6 +17,8 @@ import {
   Eye,
   Calendar,
   ShieldCheck,
+  Sparkles,
+  UserX,
 } from 'lucide-react';
 import { AttendanceCaptureModal } from './AttendanceCaptureModal';
 import {
@@ -55,12 +58,14 @@ interface EmployeeCheckInCardProps {
   attendanceRecord: AttendanceRecordData | null;
   officeSetting?: OfficeSettingData;
   onRefresh: () => void;
+  currentUser?: any;
 }
 
 export const EmployeeCheckInCard: React.FC<EmployeeCheckInCardProps> = ({
   attendanceRecord,
   officeSetting,
   onRefresh,
+  currentUser,
 }) => {
   // Modal & Preview state
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -110,6 +115,52 @@ export const EmployeeCheckInCard: React.FC<EmployeeCheckInCardProps> = ({
   const [currentDistance, setCurrentDistance] = useState<number | null>(null);
   const [isWithinArea, setIsWithinArea] = useState<boolean | null>(null);
   const [gpsError, setGpsError] = useState<string | null>(null);
+
+  // Authenticated user & Employee linking state
+  const [userProfile, setUserProfile] = useState<any>(currentUser || null);
+  const [isAutoLinking, setIsAutoLinking] = useState(false);
+  const [linkMsg, setLinkMsg] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (currentUser) {
+      setUserProfile(currentUser);
+    } else {
+      fetch('/api/auth/me', { credentials: 'include' })
+        .then((res) => (res.ok ? res.json() : null))
+        .then((data) => {
+          const u = data?.user || data?.data || data;
+          if (u) setUserProfile(u);
+        })
+        .catch(() => {});
+    }
+  }, [currentUser]);
+
+  const hasEmployeeProfile = Boolean(userProfile?.employee?.id || userProfile?.employee);
+  const isAdmin = userProfile?.role === 'ADMIN' || userProfile?.role === 'HR';
+
+  const handleQuickAutoLink = async () => {
+    try {
+      setIsAutoLinking(true);
+      setLinkMsg(null);
+      const res = await fetch('/api/employees/link-user', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ autoProvision: true }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setLinkMsg(data.message || 'Profil berhasil dihubungkan!');
+        if (data.employee) {
+          setUserProfile((prev: any) => ({ ...prev, employee: data.employee }));
+        }
+        onRefresh();
+      }
+    } catch (e) {
+      // ignore
+    } finally {
+      setIsAutoLinking(false);
+    }
+  };
 
   const refreshProximity = useCallback(() => {
     setGpsError(null);
@@ -226,6 +277,49 @@ export const EmployeeCheckInCard: React.FC<EmployeeCheckInCardProps> = ({
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
             {/* Left Section: Live Time, Date, and Location Status */}
             <div className="space-y-4 flex-1">
+              {/* Unlinked Employee Profile Banner */}
+              {!hasEmployeeProfile && (
+                <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-900 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
+                  <div className="flex items-start sm:items-center gap-2">
+                    <UserX className="h-4 w-4 text-amber-600 shrink-0 mt-0.5 sm:mt-0" />
+                    <span>
+                      Akun Anda (<strong>{userProfile?.email || 'saat ini'}</strong>) belum terhubung dengan profil karyawan.
+                    </span>
+                  </div>
+                  {isAdmin ? (
+                    <div className="flex items-center gap-2 shrink-0">
+                      <Button
+                        variant="primary"
+                        size="sm"
+                        onClick={handleQuickAutoLink}
+                        isLoading={isAutoLinking}
+                        className="text-xs py-1 px-2.5 bg-amber-600 hover:bg-amber-700 font-semibold"
+                      >
+                        <Sparkles className="h-3 w-3 mr-1" />
+                        Hubungkan Otomatis
+                      </Button>
+                      <Link
+                        href="/employees"
+                        className="text-xs font-semibold text-amber-800 underline hover:text-amber-950"
+                      >
+                        Kelola Karyawan →
+                      </Link>
+                    </div>
+                  ) : (
+                    <span className="text-[11px] text-amber-700 italic">
+                      Hubungi HR/Admin untuk menghubungkan profil.
+                    </span>
+                  )}
+                </div>
+              )}
+
+              {linkMsg && (
+                <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-xs text-emerald-800 flex items-center gap-2">
+                  <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
+                  <span>{linkMsg}</span>
+                </div>
+              )}
+
               <div className="flex items-center gap-3">
                 <div className="h-10 w-10 rounded-xl bg-blue-600 text-white flex items-center justify-center shadow-xs">
                   <Clock className="h-5 w-5" />
@@ -470,9 +564,13 @@ export const EmployeeCheckInCard: React.FC<EmployeeCheckInCardProps> = ({
       <AttendanceCaptureModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        onSuccess={onRefresh}
+        onSuccess={() => {
+          setIsModalOpen(false);
+          onRefresh();
+        }}
         mode={modalMode}
         officeSetting={activeSetting}
+        currentUser={userProfile}
       />
 
       {/* Lightbox Modal for Photo Preview */}

@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
+import Link from 'next/link';
 import {
   Camera,
   MapPin,
@@ -14,6 +15,10 @@ import {
   Navigation,
   ShieldAlert,
   SwitchCamera,
+  Users,
+  Sparkles,
+  ExternalLink,
+  UserX,
 } from 'lucide-react';
 import { getCurrentBrowserLocation, calculateHaversineDistance, GeoLocationResult } from '@/lib/geo';
 
@@ -33,6 +38,7 @@ interface AttendanceCaptureModalProps {
   onSuccess: (resultData: any) => void;
   mode: 'check-in' | 'check-out';
   officeSetting: OfficeSetting;
+  currentUser?: any;
 }
 
 export const AttendanceCaptureModal: React.FC<AttendanceCaptureModalProps> = ({
@@ -41,6 +47,7 @@ export const AttendanceCaptureModal: React.FC<AttendanceCaptureModalProps> = ({
   onSuccess,
   mode,
   officeSetting,
+  currentUser,
 }) => {
   // Step: 'detecting-location' | 'out-of-range' | 'camera-active' | 'photo-preview' | 'submitting'
   const [step, setStep] = useState<
@@ -61,6 +68,56 @@ export const AttendanceCaptureModal: React.FC<AttendanceCaptureModalProps> = ({
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
+
+  // Authenticated user & Employee linking state
+  const [userProfile, setUserProfile] = useState<any>(currentUser || null);
+  const [isAutoLinking, setIsAutoLinking] = useState(false);
+  const [autoLinkMessage, setAutoLinkMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (currentUser) {
+      setUserProfile(currentUser);
+    } else if (isOpen) {
+      fetch('/api/auth/me', { credentials: 'include' })
+        .then((res) => (res.ok ? res.json() : null))
+        .then((data) => {
+          const u = data?.user || data?.data || data;
+          if (u) setUserProfile(u);
+        })
+        .catch(() => {});
+    }
+  }, [isOpen, currentUser]);
+
+  const hasEmployeeProfile = Boolean(userProfile?.employee?.id || userProfile?.employee);
+  const isAdmin = userProfile?.role === 'ADMIN' || userProfile?.role === 'HR';
+
+  const handleAutoLinkProfile = async () => {
+    try {
+      setIsAutoLinking(true);
+      setAutoLinkMessage(null);
+      setApiError(null);
+      const res = await fetch('/api/employees/link-user', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ autoProvision: true }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.message || 'Gagal menghubungkan profil karyawan.');
+      }
+      setAutoLinkMessage(data.message || 'Profil karyawan berhasil dihubungkan!');
+      if (data.employee) {
+        setUserProfile((prev: any) => ({
+          ...prev,
+          employee: data.employee,
+        }));
+      }
+    } catch (err: any) {
+      setApiError(err.message || 'Gagal menghubungkan profil');
+    } finally {
+      setIsAutoLinking(false);
+    }
+  };
 
   // Reset & Start Geolocation when modal opens
   useEffect(() => {
@@ -496,6 +553,58 @@ export const AttendanceCaptureModal: React.FC<AttendanceCaptureModalProps> = ({
               )}
             </div>
 
+            {/* Unlinked Employee Warning Banner */}
+            {!hasEmployeeProfile && (
+              <div className="p-3.5 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-900 space-y-2.5">
+                <div className="flex items-start gap-2.5">
+                  <UserX className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
+                  <div className="flex-1">
+                    <p className="font-bold text-amber-800">
+                      Akun Belum Terhubung ke Profil Karyawan
+                    </p>
+                    <p className="text-[11px] text-amber-700 mt-0.5 leading-relaxed">
+                      Akun Anda ({userProfile?.email || 'saat ini'}) belum terhubung dengan data karyawan di sistem. Tombol absensi dinonaktifkan sampai akun dipasangkan.
+                    </p>
+                  </div>
+                </div>
+
+                {isAdmin ? (
+                  <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-amber-200/60">
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      onClick={handleAutoLinkProfile}
+                      isLoading={isAutoLinking}
+                      className="gap-1.5 text-xs bg-amber-600 hover:bg-amber-700 font-semibold"
+                    >
+                      <Sparkles className="h-3.5 w-3.5" />
+                      Hubungkan Profil Otomatis
+                    </Button>
+                    <Link
+                      href="/employees"
+                      onClick={onClose}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-amber-300 text-amber-800 rounded-lg text-xs font-semibold hover:bg-amber-100 transition-colors shadow-2xs"
+                    >
+                      <Users className="h-3.5 w-3.5 text-amber-600" />
+                      Buka Manajemen Karyawan
+                      <ExternalLink className="h-3 w-3 text-amber-500 ml-0.5" />
+                    </Link>
+                  </div>
+                ) : (
+                  <div className="p-2 bg-white/70 rounded-lg border border-amber-200 text-[11px] text-amber-800">
+                    Silakan hubungi tim HR atau Administrator untuk menghubungkan akun login Anda ke profil karyawan.
+                  </div>
+                )}
+              </div>
+            )}
+
+            {autoLinkMessage && (
+              <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-xs text-emerald-800 flex items-center gap-2">
+                <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
+                <span>{autoLinkMessage}</span>
+              </div>
+            )}
+
             {apiError && (
               <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-800 flex items-center gap-2">
                 <AlertTriangle className="h-4 w-4 text-rose-600 shrink-0" />
@@ -521,8 +630,9 @@ export const AttendanceCaptureModal: React.FC<AttendanceCaptureModalProps> = ({
                 size="md"
                 onClick={handleUsePhotoAndSubmit}
                 isLoading={isSubmitting}
-                disabled={isSubmitting}
-                className="gap-2 font-bold bg-emerald-600 hover:bg-emerald-700 focus-visible:ring-emerald-600 shadow-sm active:scale-98 transition-transform"
+                disabled={isSubmitting || !hasEmployeeProfile}
+                title={!hasEmployeeProfile ? 'Akun belum terhubung ke profil karyawan' : undefined}
+                className="gap-2 font-bold bg-emerald-600 hover:bg-emerald-700 focus-visible:ring-emerald-600 shadow-sm active:scale-98 transition-transform disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <CheckCircle2 className="h-4 w-4" />
                 GUNAKAN FOTO

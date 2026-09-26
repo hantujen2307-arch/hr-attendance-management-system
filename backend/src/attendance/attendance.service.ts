@@ -158,50 +158,175 @@ export class AttendanceService {
 
   /**
    * Helper to resolve Employee profile for authenticated user.
-   * Auto-links userId to Employee by email if not yet linked.
+   * Auto-links userId to Employee by email, links unlinked employee,
+   * or auto-provisions a default profile for Admin/HR/privileged accounts.
    */
-  private async resolveEmployee(user: any) {
+  async resolveEmployee(user: any, throwOnError: boolean = true) {
     let employeeId = user?.employee?.id;
     let employee: any = null;
 
+    // 1. Try finding by user.employee.id if populated
     if (employeeId) {
       employee = await this.prisma.employee.findUnique({
         where: { id: employeeId },
         include: { shift: true },
       });
+      if (employee && (!employee.userId || employee.userId !== user?.id) && user?.id) {
+        await this.prisma.employee
+          .update({
+            where: { id: employee.id },
+            data: { userId: user.id },
+          })
+          .catch(() => {});
+      }
     }
 
+    // 2. Try finding by userId
     if (!employee && user?.id) {
       employee = await this.prisma.employee.findFirst({
+        where: { userId: user.id },
+        include: { shift: true },
+      });
+    }
+
+    // 3. Try finding by email (case-insensitive)
+    if (!employee && user?.email) {
+      employee = await this.prisma.employee.findFirst({
         where: {
-          OR: [
-            { userId: user.id },
-            ...(user.email ? [{ email: { equals: user.email, mode: 'insensitive' as const } }] : []),
-          ],
+          email: { equals: user.email.trim(), mode: 'insensitive' as const },
         },
         include: { shift: true },
       });
 
-      if (employee) {
-        if (!employee.userId || employee.userId !== user.id) {
-          await this.prisma.employee
-            .update({
-              where: { id: employee.id },
+      if (employee && user?.id) {
+        // Link to current user
+        await this.prisma.employee
+          .update({
+            where: { id: employee.id },
+            data: { userId: user.id },
+          })
+          .catch(() => {});
+      }
+    }
+
+    // 4. Try matching unlinked employee by username prefix
+    if (!employee && user?.email && user?.id) {
+      const username = user.email.split('@')[0].trim().toLowerCase();
+      if (username) {
+        const unlinked = await this.prisma.employee.findFirst({
+          where: {
+            userId: null,
+            email: { startsWith: username, mode: 'insensitive' as const },
+          },
+          include: { shift: true },
+        });
+
+        if (unlinked) {
+          try {
+            employee = await this.prisma.employee.update({
+              where: { id: unlinked.id },
               data: { userId: user.id },
-            })
-            .catch(() => {});
+              include: { shift: true },
+            });
+          } catch (e) {
+            // Ignore update error
+          }
+        }
+      }
+    }
+
+    // 5. Fallback: Auto-provision default employee profile for Admin, HR, or developer accounts
+    if (!employee && user?.id && user?.email) {
+      const isAdminOrHr =
+        user.role === UserRole.ADMIN ||
+        user.role === UserRole.HR ||
+        user.role === 'ADMIN' ||
+        user.role === 'HR';
+
+      if (isAdminOrHr) {
+        try {
+          // Resolve or create default department
+          let department = await this.prisma.department.findFirst({
+            where: { status: 'ACTIVE' },
+            orderBy: { createdAt: 'asc' },
+          });
+
+          if (!department) {
+            department = await this.prisma.department.create({
+              data: {
+                name: 'Management',
+                code: 'MGMT',
+                status: 'ACTIVE',
+                description: 'Executive Management & Administration',
+              },
+            });
+          }
+
+          // Resolve default shift
+          const defaultShift = await this.prisma.shift.findFirst({
+            where: { status: 'ACTIVE' },
+            orderBy: { createdAt: 'asc' },
+          });
+
+          const rolePrefix =
+            user.role === 'ADMIN' || user.role === UserRole.ADMIN ? 'ADM' : 'HR';
+          const randomSuffix = Math.floor(1000 + Math.random() * 9000);
+          const empId = `EMP-${rolePrefix}-${randomSuffix}`;
+
+          const nameParts = (user.email.split('@')[0] || 'Administrator')
+            .replace(/[._-]/g, ' ')
+            .trim()
+            .split(' ');
+          const firstName =
+            nameParts[0].charAt(0).toUpperCase() + nameParts[0].slice(1).toLowerCase();
+          const lastName =
+            nameParts.length > 1
+              ? nameParts
+                  .slice(1)
+                  .map((w: string) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+                  .join(' ')
+              : (isAdminOrHr ? '(Staff)' : '');
+
+          const positionTitle =
+            user.role === 'ADMIN' || user.role === UserRole.ADMIN
+              ? 'System Administrator'
+              : 'HR Specialist';
+
+          employee = await this.prisma.employee.create({
+            data: {
+              userId: user.id,
+              employeeId: empId,
+              firstName: firstName || 'Administrator',
+              lastName: lastName || '',
+              email: user.email.trim().toLowerCase(),
+              departmentId: department.id,
+              shiftId: defaultShift?.id || null,
+              position: positionTitle,
+              joinDate: new Date(),
+              employmentStatus: EmploymentStatus.ACTIVE,
+            },
+            include: { shift: true },
+          });
+        } catch (createErr) {
+          console.error('Auto-provisioning employee profile in resolveEmployee failed:', createErr);
         }
       }
     }
 
     if (!employee) {
-      throw new BadRequestException(
-        'Authenticated user is not linked to an employee profile. Please contact HR to link your employee profile.'
-      );
+      if (throwOnError) {
+        throw new BadRequestException(
+          'Authenticated user is not linked to an employee profile. Please contact HR to link your employee profile.'
+        );
+      }
+      return null;
     }
 
     if (employee.employmentStatus === EmploymentStatus.INACTIVE) {
-      throw new ForbiddenException('Karyawan berstatus nonaktif tidak dapat melakukan absensi');
+      if (throwOnError) {
+        throw new ForbiddenException('Karyawan berstatus nonaktif tidak dapat melakukan absensi');
+      }
+      return null;
     }
 
     return employee;
@@ -626,19 +751,13 @@ export class AttendanceService {
     const notYetCheckedIn = Math.max(0, totalEmployees - alreadyCheckedIn);
 
     let myAttendance: any = null;
-    let employeeId = user?.employee?.id;
-    if (!employeeId && user?.id) {
-      const emp = await this.prisma.employee.findFirst({
-        where: {
-          OR: [
-            { userId: user.id },
-            ...(user.email ? [{ email: { equals: user.email, mode: 'insensitive' as const } }] : []),
-          ],
-        },
-        select: { id: true },
-      });
-      if (emp) employeeId = emp.id;
+    let employee = null;
+    try {
+      employee = await this.resolveEmployee(user, false);
+    } catch {
+      // Non-blocking in summary
     }
+    const employeeId = employee?.id || user?.employee?.id;
 
     if (employeeId) {
       myAttendance = await this.prisma.attendance.findUnique({

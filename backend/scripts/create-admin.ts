@@ -56,6 +56,57 @@ async function createInitialAdmin() {
     console.log(`   ID:    ${user.id}`);
     console.log(`   Email: ${user.email}`);
     console.log(`   Role:  ${user.role}`);
+
+    // 3. Ensure employee profile is linked to this admin user
+    let employee = await prisma.employee.findFirst({
+      where: {
+        OR: [
+          { userId: user.id },
+          { email: { equals: email, mode: 'insensitive' } },
+        ],
+      },
+    });
+
+    if (employee) {
+      if (employee.userId !== user.id) {
+        await prisma.employee.update({
+          where: { id: employee.id },
+          data: { userId: user.id },
+        });
+        console.log(`🔗 Linked existing employee profile (${employee.employeeId}) to admin user.`);
+      } else {
+        console.log(`✅ Employee profile already linked (${employee.employeeId}).`);
+      }
+    } else {
+      let dept = await prisma.department.findFirst({ where: { status: 'ACTIVE' } });
+      if (!dept) {
+        dept = await prisma.department.create({
+          data: {
+            name: 'Management',
+            code: 'MGMT',
+            status: 'ACTIVE',
+          },
+        });
+      }
+      const shift = await prisma.shift.findFirst({ where: { status: 'ACTIVE' } });
+      const empCount = await prisma.employee.count();
+      employee = await prisma.employee.create({
+        data: {
+          userId: user.id,
+          employeeId: `EMP-ADM-${String(empCount + 1).padStart(3, '0')}`,
+          firstName: 'Administrator',
+          lastName: '(System)',
+          email: user.email,
+          departmentId: dept.id,
+          shiftId: shift?.id || null,
+          position: 'System Administrator',
+          joinDate: new Date(),
+          employmentStatus: 'ACTIVE',
+        },
+      });
+      console.log(`👤 Created and linked new employee profile (${employee.employeeId}) for admin.`);
+    }
+
     console.log(`🎉 Initial Admin Setup Complete.`);
   } catch (error) {
     console.error('❌ Failed to initialize admin account:', error);

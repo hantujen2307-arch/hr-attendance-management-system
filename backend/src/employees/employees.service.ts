@@ -1007,4 +1007,152 @@ export class EmployeesService {
       errors: [],
     };
   }
+
+  /**
+   * Explicitly link a User to an Employee profile, or auto-provision for Admin/HR
+   */
+  async linkUserToEmployee(
+    dto: { employeeId?: string; userId?: string; autoProvision?: boolean },
+    currentUser: any
+  ) {
+    const targetUserId = dto.userId || currentUser?.id;
+    if (!targetUserId) {
+      throw new BadRequestException('User ID tidak valid');
+    }
+
+    const targetUser = await this.prisma.user.findUnique({
+      where: { id: targetUserId },
+      include: { employee: true },
+    });
+
+    if (!targetUser) {
+      throw new NotFoundException('User akun tidak ditemukan');
+    }
+
+    // 1. If explicit employeeId is given, link directly
+    if (dto.employeeId) {
+      const employee = await this.prisma.employee.findUnique({
+        where: { id: dto.employeeId },
+      });
+      if (!employee) {
+        throw new NotFoundException('Data karyawan tidak ditemukan');
+      }
+
+      // Check if employee already linked to another user
+      if (employee.userId && employee.userId !== targetUserId) {
+        await this.prisma.employee.update({
+          where: { id: employee.id },
+          data: { userId: null },
+        });
+      }
+
+      const updated = await this.prisma.employee.update({
+        where: { id: employee.id },
+        data: { userId: targetUserId },
+        include: { department: true, shift: true },
+      });
+
+      await this.auditService.log({
+        userId: currentUser?.id,
+        action: 'EMPLOYEE_USER_LINKED',
+        details: `User ${targetUser.email} dihubungkan ke karyawan ${updated.firstName} ${updated.lastName} (${updated.employeeId})`,
+        metadata: { employeeId: updated.id, userId: targetUserId },
+      });
+
+      return {
+        success: true,
+        message: `Berhasil menghubungkan user ke karyawan ${updated.firstName} ${updated.lastName}`,
+        employee: updated,
+      };
+    }
+
+    // 2. Auto-link by email
+    let employee = await this.prisma.employee.findFirst({
+      where: {
+        OR: [
+          { userId: targetUserId },
+          { email: { equals: targetUser.email, mode: 'insensitive' } },
+        ],
+      },
+      include: { department: true, shift: true },
+    });
+
+    if (employee) {
+      if (employee.userId !== targetUserId) {
+        employee = await this.prisma.employee.update({
+          where: { id: employee.id },
+          data: { userId: targetUserId },
+          include: { department: true, shift: true },
+        });
+      }
+      return {
+        success: true,
+        message: `Berhasil menghubungkan profil karyawan (${employee.employeeId}) berdasarkan email.`,
+        employee,
+      };
+    }
+
+    // 3. Auto-provision if Admin, HR, or requested
+    let dept = await this.prisma.department.findFirst({ where: { status: 'ACTIVE' } });
+    if (!dept) {
+      dept = await this.prisma.department.create({
+        data: { name: 'Management', code: 'MGMT', status: 'ACTIVE' },
+      });
+    }
+
+    const shift = await this.prisma.shift.findFirst({ where: { status: 'ACTIVE' } });
+    const empCount = await this.prisma.employee.count();
+    const rolePrefix =
+      targetUser.role === 'ADMIN' ? 'ADM' : targetUser.role === 'HR' ? 'HR' : 'EMP';
+
+    const nameParts = (targetUser.email.split('@')[0] || 'User')
+      .replace(/[._-]/g, ' ')
+      .trim()
+      .split(' ');
+    const firstName =
+      nameParts[0].charAt(0).toUpperCase() + nameParts[0].slice(1).toLowerCase();
+    const lastName =
+      nameParts.length > 1
+        ? nameParts
+            .slice(1)
+            .map((w: string) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+            .join(' ')
+        : (targetUser.role === 'ADMIN' ? '(Admin)' : '');
+
+    const position =
+      targetUser.role === 'ADMIN'
+        ? 'System Administrator'
+        : targetUser.role === 'HR'
+        ? 'HR Specialist'
+        : 'Staff Employee';
+
+    const newEmployee = await this.prisma.employee.create({
+      data: {
+        userId: targetUserId,
+        employeeId: `EMP-${rolePrefix}-${String(empCount + 1).padStart(3, '0')}`,
+        firstName: firstName || 'User',
+        lastName: lastName || '',
+        email: targetUser.email,
+        departmentId: dept.id,
+        shiftId: shift?.id || null,
+        position,
+        joinDate: new Date(),
+        employmentStatus: EmploymentStatus.ACTIVE,
+      },
+      include: { department: true, shift: true },
+    });
+
+    await this.auditService.log({
+      userId: currentUser?.id,
+      action: 'EMPLOYEE_AUTO_PROVISIONED',
+      details: `Profil karyawan otomatis dibuat dan dihubungkan untuk user ${targetUser.email}`,
+      metadata: { employeeId: newEmployee.id, userId: targetUserId },
+    });
+
+    return {
+      success: true,
+      message: `Profil karyawan (${newEmployee.employeeId}) berhasil dibuat otomatis dan dihubungkan ke akun Anda.`,
+      employee: newEmployee,
+    };
+  }
 }

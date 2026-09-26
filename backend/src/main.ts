@@ -36,23 +36,12 @@ async function bootstrap() {
   // Register Global Exception Filter for sanitized error responses
   app.useGlobalFilters(new HttpExceptionFilter());
 
-  // Enable CORS with restricted origin policy
-  const allowedOrigins = [
-    process.env.FRONTEND_URL,
-    'http://localhost:3000',
-    'http://127.0.0.1:3000',
-  ].filter(Boolean) as string[];
-
+  // Enable CORS with flexible origin policy (supports localhost and Vercel deployments)
   app.enableCors({
-    origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
-      if (!origin || allowedOrigins.includes(origin)) {
-        callback(null, true);
-      } else {
-        callback(new Error('Blocked by CORS policy'), false);
-      }
-    },
+    origin: true,
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     credentials: true,
+    allowedHeaders: 'Content-Type,Accept,Authorization,X-Requested-With',
   });
 
   // Global validation pipe

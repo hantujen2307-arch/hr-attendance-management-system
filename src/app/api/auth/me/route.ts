@@ -2,7 +2,7 @@ export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { prisma, withDbRetry, formatDatabaseError } from '@/lib/prisma';
 import { verifyJwt } from '@/lib/jwt';
 
 export async function GET(request: NextRequest) {
@@ -37,21 +37,23 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const user = await prisma.user.findUnique({
-      where: { id: payload.sub },
-      select: {
-        id: true,
-        email: true,
-        role: true,
-        createdAt: true,
-        employee: {
-          include: {
-            department: true,
-            shift: true,
+    const user = await withDbRetry(() =>
+      prisma.user.findUnique({
+        where: { id: payload.sub },
+        select: {
+          id: true,
+          email: true,
+          role: true,
+          createdAt: true,
+          employee: {
+            include: {
+              department: true,
+              shift: true,
+            },
           },
         },
-      },
-    });
+      })
+    );
 
     if (!user) {
       return NextResponse.json(
@@ -201,10 +203,11 @@ export async function GET(request: NextRequest) {
     } catch (backendErr) {
       console.error('[AUTH_ME_BACKEND_FALLBACK_ERROR]', backendErr);
     }
+    const dbErr = formatDatabaseError(error, 'Gagal memverifikasi sesi autentikasi.');
     return NextResponse.json(
-      { message: 'Failed to authenticate user session' },
+      { message: dbErr.message, isColdStart: dbErr.isColdStart },
       {
-        status: 500,
+        status: dbErr.isColdStart ? 503 : 500,
         headers: {
           'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
         },

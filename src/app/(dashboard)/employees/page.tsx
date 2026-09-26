@@ -21,6 +21,7 @@ import {
   Sparkles,
   UserX,
   CheckCircle2,
+  AlertCircle,
 } from 'lucide-react';
 
 export default function EmployeesPage() {
@@ -28,6 +29,7 @@ export default function EmployeesPage() {
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [linkingCurrentAdmin, setLinkingCurrentAdmin] = useState(false);
   const [linkAdminSuccess, setLinkAdminSuccess] = useState<string | null>(null);
+  const [linkAdminError, setLinkAdminError] = useState<string | null>(null);
   const [employees, setEmployees] = useState<EmployeeRecord[]>([]);
   const [stats, setStats] = useState<EmployeeStats | null>(null);
   const [departments, setDepartments] = useState<Array<{ id: string; name: string }>>([]);
@@ -83,6 +85,7 @@ export default function EmployeesPage() {
     try {
       setLinkingCurrentAdmin(true);
       setLinkAdminSuccess(null);
+      setLinkAdminError(null);
       const res = await fetch('/api/employees/link-user', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -91,15 +94,22 @@ export default function EmployeesPage() {
       const data = await res.json();
       if (res.ok) {
         setLinkAdminSuccess(data.message || 'Profil karyawan berhasil dihubungkan.');
+        setLinkAdminError(null);
         if (data.employee) {
           setCurrentUser((prev: any) => ({ ...prev, employee: data.employee }));
         }
         reloadData();
       } else {
-        alert(data.message || 'Gagal menghubungkan profil');
+        setLinkAdminError(
+          data.message ||
+            'Layanan database sedang aktif kembali (cold-start) atau koneksi timeout. Silakan klik tombol Coba Lagi.'
+        );
       }
     } catch (e: any) {
-      alert(e.message || 'Gagal menghubungkan profil');
+      setLinkAdminError(
+        e.message ||
+          'Terjadi kesalahan saat menghubungkan profil akun. Mohon periksa koneksi internet atau database.'
+      );
     } finally {
       setLinkingCurrentAdmin(false);
     }
@@ -334,6 +344,25 @@ export default function EmployeesPage() {
         <div className="p-3.5 bg-emerald-50 border border-emerald-200 rounded-xl text-xs text-emerald-800 flex items-center gap-2.5 shadow-2xs">
           <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
           <span className="font-medium">{linkAdminSuccess}</span>
+        </div>
+      )}
+
+      {linkAdminError && (
+        <div className="p-3.5 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
+          <div className="flex items-center gap-2.5">
+            <AlertCircle className="h-4 w-4 text-rose-600 shrink-0" />
+            <span className="font-medium">{linkAdminError}</span>
+          </div>
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            onClick={handleAutoLinkCurrentAdmin}
+            disabled={linkingCurrentAdmin}
+            className="h-7 text-xs border-rose-200 text-rose-700 hover:bg-rose-100 font-semibold shrink-0"
+          >
+            {linkingCurrentAdmin ? 'Menghubungkan...' : 'Coba Lagi'}
+          </Button>
         </div>
       )}
 

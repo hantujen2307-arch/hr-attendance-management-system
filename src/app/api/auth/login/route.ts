@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
-import { prisma } from '@/lib/prisma';
+import { prisma, withDbRetry, formatDatabaseError } from '@/lib/prisma';
 import { signJwt } from '@/lib/jwt';
 
 const BACKEND_URL =
@@ -63,21 +63,23 @@ export async function POST(request: NextRequest) {
     // 2. Direct Prisma Fallback if backend was unreachable or returned non-auth error
     if (!accessToken || !authenticatedUser) {
       try {
-        const user = await prisma.user.findUnique({
-          where: { email: emailNormalized },
-          include: {
-            employee: {
-              select: {
-                id: true,
-                employeeId: true,
-                firstName: true,
-                lastName: true,
-                department: { select: { id: true, name: true } },
-                position: true,
+        const user = await withDbRetry(() =>
+          prisma.user.findUnique({
+            where: { email: emailNormalized },
+            include: {
+              employee: {
+                select: {
+                  id: true,
+                  employeeId: true,
+                  firstName: true,
+                  lastName: true,
+                  department: { select: { id: true, name: true } },
+                  position: true,
+                },
               },
             },
-          },
-        });
+          })
+        );
 
         if (!user) {
           return NextResponse.json(
@@ -153,10 +155,11 @@ export async function POST(request: NextRequest) {
           .catch((err) => console.error('[AUDIT_LOG_ERROR]', err));
       } catch (prismaError: any) {
         console.error('[AUTH_LOGIN_PRISMA_ERROR] Direct database authentication failed:', prismaError);
+        const dbErr = formatDatabaseError(prismaError, 'Layanan autentikasi database sedang tidak tersedia.');
         return NextResponse.json(
           {
-            message:
-              'Authentication service temporarily unavailable. Please check database connection or try again in a moment.',
+            message: dbErr.message,
+            isColdStart: dbErr.isColdStart,
           },
           { status: 503 }
         );

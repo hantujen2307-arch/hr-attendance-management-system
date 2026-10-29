@@ -25,7 +25,7 @@ interface LeaveTableProps {
 }
 
 export const LeaveTable: React.FC<LeaveTableProps> = ({
-  requests,
+  requests = [],
   currentRole = 'EMPLOYEE',
   onApprove,
   onReject,

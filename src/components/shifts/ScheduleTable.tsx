@@ -15,7 +15,7 @@ interface ScheduleTableProps {
 }
 
 export const ScheduleTable: React.FC<ScheduleTableProps> = ({
-  schedules,
+  schedules = [],
   loading,
   onDeleteSchedule,
   onAssignNew,

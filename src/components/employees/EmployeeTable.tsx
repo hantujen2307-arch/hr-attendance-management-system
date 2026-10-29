@@ -30,7 +30,7 @@ interface EmployeeTableProps {
 }
 
 export const EmployeeTable: React.FC<EmployeeTableProps> = ({
-  employees,
+  employees = [],
   loading,
   onViewDetail,
   onEdit,

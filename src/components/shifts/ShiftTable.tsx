@@ -26,7 +26,7 @@ interface ShiftTableProps {
 }
 
 export const ShiftTable: React.FC<ShiftTableProps> = ({
-  shifts,
+  shifts = [],
   loading,
   onEdit,
   onDeactivate,

@@ -27,7 +27,7 @@ interface ReimbursementTableProps {
 }
 
 export const ReimbursementTable: React.FC<ReimbursementTableProps> = ({
-  records,
+  records = [],
   isLoading,
   currentRole,
   onViewDetail,

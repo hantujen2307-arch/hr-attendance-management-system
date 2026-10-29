@@ -11,7 +11,7 @@ interface OvertimeSummaryCardsProps {
 }
 
 export const OvertimeSummaryCards: React.FC<OvertimeSummaryCardsProps> = ({
-  records,
+  records = [],
   currentRole,
 }) => {
   const isEmployee = currentRole === 'EMPLOYEE';

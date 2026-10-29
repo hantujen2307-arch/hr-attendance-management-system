@@ -44,7 +44,7 @@ export const AttendanceChart: React.FC = () => {
         throw new Error('Failed to fetch attendance trend');
       }
       const json = await res.json();
-      setTrendData(json.data || []);
+      setTrendData(Array.isArray(json?.data) ? json.data : Array.isArray(json) ? json : []);
     } catch (err: any) {
       setError(err.message || 'Unable to load attendance overview');
     } finally {

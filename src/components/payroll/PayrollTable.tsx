@@ -15,7 +15,7 @@ interface PayrollTableProps {
 }
 
 export const PayrollTable: React.FC<PayrollTableProps> = ({
-  records,
+  records = [],
   isLoading,
   currentRole,
   onViewSlip,

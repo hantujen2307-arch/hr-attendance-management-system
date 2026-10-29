@@ -58,7 +58,7 @@ interface AttendanceTableProps {
 }
 
 export const AttendanceTable: React.FC<AttendanceTableProps> = ({
-  records,
+  records = [],
   isLoading = false,
   canManage = false,
   startIndex = 1,

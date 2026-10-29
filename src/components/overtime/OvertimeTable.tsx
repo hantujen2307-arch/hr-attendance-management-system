@@ -28,7 +28,7 @@ interface OvertimeTableProps {
 }
 
 export const OvertimeTable: React.FC<OvertimeTableProps> = ({
-  records,
+  records = [],
   isLoading,
   currentRole,
   onViewDetail,

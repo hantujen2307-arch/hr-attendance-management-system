@@ -59,7 +59,7 @@ interface ReportTableProps {
 }
 
 export const ReportTable: React.FC<ReportTableProps> = ({
-  records,
+  records = [],
   isLoading,
   sortBy,
   sortOrder,

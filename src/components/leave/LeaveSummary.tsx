@@ -7,7 +7,7 @@ interface LeaveSummaryProps {
   leaveRequests: LeaveRequest[];
 }
 
-export const LeaveSummary: React.FC<LeaveSummaryProps> = ({ leaveRequests }) => {
+export const LeaveSummary: React.FC<LeaveSummaryProps> = ({ leaveRequests = [] }) => {
   const pendingCount = leaveRequests.filter(
     (r) => r.status === 'Pending' || (r.status as string) === 'PENDING'
   ).length;

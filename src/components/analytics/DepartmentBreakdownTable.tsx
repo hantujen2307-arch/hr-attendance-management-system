@@ -32,7 +32,7 @@ interface DepartmentBreakdownTableProps {
   departments: DepartmentBreakdownItem[];
 }
 
-export const DepartmentBreakdownTable: React.FC<DepartmentBreakdownTableProps> = ({ departments }) => {
+export const DepartmentBreakdownTable: React.FC<DepartmentBreakdownTableProps> = ({ departments = [] }) => {
   const formatCurrency = (val: number) => {
     return new Intl.NumberFormat('id-ID', {
       style: 'currency',

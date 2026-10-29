@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import React, { useEffect, useState } from 'react';
 import { Download, WifiOff, X } from 'lucide-react';
@@ -9,7 +9,7 @@ interface BeforeInstallPromptEvent extends Event {
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed'; platform: string }>;
 }
 
-export const PwaRegister: React.FC = () => {
+export function PwaRegister() {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [showInstallBanner, setShowInstallBanner] = useState<boolean>(false);
   const [isOffline, setIsOffline] = useState<boolean>(false);
@@ -139,4 +139,6 @@ export const PwaRegister: React.FC = () => {
       )}
     </>
   );
-};
+}
+
+export default PwaRegister;

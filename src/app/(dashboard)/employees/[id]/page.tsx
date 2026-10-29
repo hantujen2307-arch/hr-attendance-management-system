@@ -335,7 +335,7 @@ export default function EmployeeDetailPage() {
             <div className="p-3 bg-slate-50/80 border-b border-slate-200">
               <h4 className="text-xs font-bold text-slate-700 uppercase">Riwayat Absensi</h4>
             </div>
-            {detailedData.recentAttendances.length ? (
+            {detailedData?.recentAttendances?.length ? (
               <table className="w-full text-left text-xs">
                 <thead className="bg-slate-50/50 border-b border-slate-100 text-slate-500 font-semibold">
                   <tr>
@@ -408,7 +408,7 @@ export default function EmployeeDetailPage() {
           <div className="p-3 bg-slate-50/80 border-b border-slate-200">
             <h4 className="text-xs font-bold text-slate-700 uppercase">Riwayat Pengajuan</h4>
           </div>
-          {detailedData.recentLeaves.length ? (
+          {detailedData?.recentLeaves?.length ? (
             <table className="w-full text-left text-xs">
               <thead className="bg-slate-50/50 border-b border-slate-100 text-slate-500 font-semibold">
                 <tr>
@@ -466,7 +466,7 @@ export default function EmployeeDetailPage() {
           <div className="p-3 bg-slate-50/80">
             <h4 className="text-xs font-bold text-slate-700 uppercase">Log Aktivitas & Audit</h4>
           </div>
-          {detailedData.auditLogs.length ? (
+          {detailedData?.auditLogs?.length ? (
             detailedData.auditLogs.map((log: any) => (
               <div key={log.id} className="p-3 text-xs flex items-start gap-3 hover:bg-slate-50/50">
                 <div className="p-1.5 rounded-lg bg-blue-50 text-blue-600 shrink-0 mt-0.5">
